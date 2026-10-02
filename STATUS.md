@@ -177,6 +177,9 @@ Dedicated helpers in `src/lib/utils.ts` applied across public and admin interfac
 - **Remote Repository**: `https://github.com/abudoxali/Grantly.git`
 - **Default Branch**: `main`
 - **Source of Truth**: Local workspace implementation is authoritative.
+- **Published Commit**: `55b71c8` (`55b71c879ffdc77515458db11e64c02130774190`)
+- **Remote HEAD**: Verified tracking `origin/main` at `55b71c879ffdc77515458db11e64c02130774190`
+
 
 ### Security & Secrets Audit
 - **Clean Configuration**: No `.env`, `.env.local`, `.env.production`, API keys, or private tokens committed.
