@@ -89,7 +89,7 @@ export default function AdminLoginPage() {
       {/* Standalone Admin Header */}
       <div className="max-w-6xl w-full mx-auto flex items-center justify-between">
         <Link href={`/${locale}`} className="inline-flex items-center gap-2 group">
-          <Logo size="sm" />
+          <Logo size="sm" asLink={false} />
           <span className="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 transition-colors">
             {isAr ? 'الموقع العام' : 'Public Site'}
           </span>

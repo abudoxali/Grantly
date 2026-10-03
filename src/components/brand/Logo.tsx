@@ -13,6 +13,7 @@ interface LogoProps {
   showSubtitle?: boolean;
   theme?: 'light' | 'dark';
   href?: string;
+  asLink?: boolean;
 }
 
 export function Logo({
@@ -22,6 +23,7 @@ export function Logo({
   showSubtitle = true,
   theme = 'light',
   href,
+  asLink = true,
 }: LogoProps) {
   const locale = useLocale();
   const isArabic = locale === 'ar';
@@ -67,6 +69,10 @@ export function Logo({
       </div>
     </div>
   );
+
+  if (!asLink) {
+    return content;
+  }
 
   if (href) {
     return (

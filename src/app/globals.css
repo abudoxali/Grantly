@@ -64,6 +64,21 @@
   background-image: radial-gradient(circle, rgba(148, 163, 184, 0.2) 1px, transparent 1px);
 }
 
+/* Tech Grid & Blueprint Coordinate Patterns */
+.bg-tech-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+}
+
+.bg-tech-grid-emerald {
+  background-size: 48px 48px;
+  background-image: 
+    linear-gradient(to right, rgba(16, 185, 129, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(16, 185, 129, 0.06) 1px, transparent 1px);
+}
+
 /* Tasteful interactive animations */
 @keyframes float-gentle {
   0%, 100% {
@@ -76,6 +91,84 @@
 
 .animate-float-gentle {
   animation: float-gentle 4s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(0.4deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(8px) rotate(-0.4deg);
+  }
+}
+
+.animate-float-reverse {
+  animation: float-reverse 8s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 60s linear infinite;
+}
+
+@keyframes spin-slow-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 45s linear infinite;
+}
+
+@keyframes pulse-beacon {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.15);
+  }
+}
+
+.animate-pulse-beacon {
+  animation: pulse-beacon 3s ease-in-out infinite;
+}
+
+@keyframes beam-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+.animate-beam-dash {
+  stroke-dasharray: 8 6;
+  animation: beam-dash 2.5s linear infinite;
 }
 
 /* Light Editorial Glassmorphism */
@@ -101,3 +194,4 @@
     scroll-behavior: auto !important;
   }
 }
+
