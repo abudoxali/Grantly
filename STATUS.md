@@ -1,189 +1,224 @@
-# Grantly Final Production Stage & Launch Status Documentation
+# Grantly Final Production Status
 
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
 **Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
-**Date**: October 4, 2026  
-**Status**: Production Launch Package Verified — Awaiting Client Production Inputs  
+**Date**: October 5, 2026  
+**Status**: Production Supabase Provisioned & Hardened — Final Seed / Domain / Admin / VPS Launch Pending
 
 ---
 
-> [!IMPORTANT]
-> **DEPLOYMENT POLICY COMPLIANCE CONFIRMATION**:
-> **THIS PASS EXECUTED FINAL CODE AUDITING, LOCKFILE SYNCHRONIZATION, AND QUALITY GATE VALIDATION.**
-> - **NO** VPS servers were accessed or modified via SSH.
-> - **NO** live Nginx instances were reconfigured on remote hosts.
-> - **NO** DNS records or zones were altered.
-> - **NO** production SSL/TLS certificates were requested or issued.
-> - **NO** live Supabase projects were created or modified.
-> - **NO** real administrator accounts, emails, or passwords were created or invented.
-> - **NO** live deployment occurred.
-> - **ZERO** reliance on personal developer infrastructure, domains (`abud.fun`), or credentials.
->
-> All application code, database migrations, seed scripts, image upload handlers, auth route guards, packaging configurations, and CI gates have passed 100% of local and container checks. The system is completely packaged and stands ready for immediate deployment the moment the client provides their production infrastructure credentials.
+## 1. Source Control
+
+- **Repository**: `https://github.com/abudoxali/Grantly.git`
+- **Branch**: `main`
+- **MVP Scope**: Closed / feature-complete
+- **Supabase production project**: Created and active
+- **Live application deployment**: Not performed yet
+- **Secrets committed**: None
 
 ---
 
-## 1. Executive Summary & Source Control State
+## 2. Production Supabase
 
-Grantly is an authenticated, light-first, bilingual (Arabic & English) scholarship platform connecting scholars and researchers with verified global opportunities.
+- **Project name**: `Grantly`
+- **Project ref**: `hyhtgwxmcjrwcucozbov`
+- **Region**: `eu-central-1`
+- **Status**: `ACTIVE_HEALTHY`
+- **Project URL**: `https://hyhtgwxmcjrwcucozbov.supabase.co`
+- **Database**: PostgreSQL 17
+- **Publishable client key**: Available from Supabase; value intentionally omitted from this file
+- **Secret/service-role key**: Never stored in Git or STATUS.md
 
-The MVP feature scope is **CLOSED**. No features were added or removed. All work focused strictly on production stability, dependency synchronization, secret hygiene, and input gating.
+### Applied production migrations
 
-- **Canonical Repository**: `https://github.com/abudoxali/Grantly.git`
-- **Canonical Branch**: `main`
-- **Current Verified Local State**: Codebase synchronized with all quality gates passing.
-- **Working Tree**: Clean upon final commit.
+1. `20261004224554_initial_schema`
+2. `20261004224624_security_hardening`
+3. `20261004224839_function_privilege_hardening`
+4. `20261004224906_rls_performance_hardening`
+5. `20261004224937_move_admin_helper_private`
 
----
-
-## 2. Required Production Input Gate
-
-In accordance with strict production safety rules, live infrastructure changes require verified client inputs. The audit of current runtime/environment availability:
-
-| Production Input Variable | Type / Scope | Status | Notes |
-| :--- | :--- | :---: | :--- |
-| `CLIENT_DOMAIN` | Target Production Domain | **MISSING** | Awaiting client domain (e.g. `grantly.org`) |
-| `SERVER_HOST` | Production VPS IPv4 Address | **MISSING** | Awaiting client server provisioning |
-| `SSH_USER` | Server Deployment User | **MISSING** | Awaiting client SSH credentials |
-| `SSH authentication/access` | Key or Password | **MISSING** | No server accessed |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project API URL | **MISSING** | Awaiting client Supabase project |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Public Anon Key | **MISSING** | Awaiting client Supabase project |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Private Service Key | **MISSING** | Awaiting client Supabase project |
-| `CLIENT_ADMIN_EMAIL` | Official Client Admin Email | **MISSING** | Awaiting client administrator address |
-| `CLIENT_ADMIN_PASSWORD` | Strong Admin Password | **MISSING** | To be provided securely at runtime |
-| `SUPPORT_EMAIL` | Public User Inquiries Email | **MISSING** | Awaiting client support email |
-| `SMTP_HOST` | Transactional Email Host | **MISSING** | Optional custom SMTP relay |
-| `SMTP_PORT` | Transactional Email Port | **MISSING** | Optional custom SMTP relay |
-| `SMTP_USER` | Transactional Email Username | **MISSING** | Optional custom SMTP relay |
-| `SMTP_PASSWORD` | Transactional Email Password | **MISSING** | Optional custom SMTP relay |
-| `SMTP_SENDER_EMAIL` | Transactional Sender Address | **MISSING** | Optional custom SMTP relay |
-| `SMTP_SENDER_NAME` | Transactional Sender Name | **MISSING** | Optional custom SMTP relay |
-
-> [!WARNING]
-> Because critical client infrastructure credentials are **MISSING**, no live deployment was executed. The project is **NOT** falsely claimed to be live. Developer personal credentials (`abud.fun`, personal Supabase, personal passwords) were strictly avoided.
+The repository contains matching migration source files for reproducibility.
 
 ---
 
-## 3. Final Code & Secret Audit Results
+## 3. Database / Security State
 
-### 3.1 Code Audit
-- **TODO / FIXME**: 0 occurrences in source code.
-- **Console Log**: 0 occurrences in application code; restricted purely to CLI operational scripts (`scripts/*.ts`).
-- **Localhost / Port Assumptions**: Parameterized via `PORT` (defaults to 3000) and `NEXT_PUBLIC_SITE_URL`. No hardcoded ports in deployment scripts.
-- **Personal Identifiers**: Completely eradicated. Personal domain `abud.fun` is absent from all source files and templates.
-- **Broken Links**: All navigation and footer links resolve to dynamic localized application routes (`/about`, `/scholarships`, `/countries`, `/fields`, `/guides`).
-- **Dependencies & Lockfile**: `package.json` engines updated to supported Node LTS `>=20.18.0`. `package-lock.json` is 100% synchronized with `package.json`, allowing clean `npm ci` execution.
+Live public tables exist with RLS enabled:
 
-### 3.2 Secret Audit
-- **Tracked Files Audit**: Strict regex and entropy scanning over all git-tracked files detected **0** real secrets (no private keys, no JWTs, no service-role keys, no access tokens).
-- **Git Ignore**: `.gitignore` strictly excludes `.env`, `.env*.local`, `.env.production`, `.env.development`, `.env.test`, and `*.pem`, while permitting only `.env.example`.
-- **Placeholder Safety**: `.env.example` contains only empty placeholder strings for all sensitive keys.
+- `profiles`
+- `countries`
+- `fields`
+- `providers`
+- `scholarships`
+- `scholarship_fields`
+- `guides`
+- `bookmarks`
+- `admin_audit_logs`
 
----
+Security hardening verified on the live project:
 
-## 4. Final Quality Gate Verification Matrix
+- New user trigger forces `role = user`.
+- Profile privilege-escalation trigger blocks unauthorized role, ID, and email changes.
+- Admin authorization helper moved to non-exposed `private.is_admin()`.
+- Trigger-only `SECURITY DEFINER` functions cannot be executed directly by `anon` or `authenticated` API roles.
+- Public content remains readable according to RLS policies.
+- CMS writes require an authenticated admin profile.
+- Bookmark operations are restricted to the owning user.
+- Admin audit log access is admin-only.
+- Supabase Security Advisor currently reports **zero security lints**.
 
-Every required quality gate command was executed directly and passed:
+Performance hardening applied:
 
-| Gate / Command | Scope / Purpose | Exit Code | Result | Details |
-| :--- | :--- | :---: | :---: | :--- |
-| `npm ci` | Clean dependency installation | **0** | **PASS** | 528 packages installed cleanly from lockfile |
-| `npx tsc --noEmit` | Strict TypeScript compilation | **0** | **PASS** | 0 type errors across all modules |
-| `npm run lint` | ESLint quality rules | **0** | **PASS** | 0 errors, 0 warnings |
-| `npm test` | Automated test suite | **0** | **PASS** | 28 / 28 automated tests passed |
-| `npm run preflight` | Release preflight validation | **0** | **PASS** | 7 / 7 operational checks passed |
-| `npm run build` | Next.js Standalone Build | **0** | **PASS** | Turbopack compilation succeeded (11 static / 23 dynamic routes) |
-
----
-
-## 5. Production Infrastructure Architecture & Operational Procedures
-
-### 5.1 Supported Hosting Targets
-1. **Primary Target — Standard Ubuntu VPS**:
-   - Ubuntu 22.04+ LTS.
-   - Node.js 20 LTS (Active LTS runtime), npm, PM2 process manager.
-   - Nginx reverse proxy with TLS 1.2/1.3 and rate limiting.
-   - Supabase Managed PostgreSQL backend.
-   - Zero vendor lock-in; deployable on Hetzner, DigitalOcean, Vultr, AWS EC2, or client private cloud.
-2. **Alternative Target — Standard Managed Node.js Platforms**:
-   - Platform-as-a-Service environments supporting Node.js 20 standalone builds (Render, Railway, Fly.io, etc.).
-   - Configured simply via standard environment variables and `PORT`.
-
-### 5.2 Supabase Database Setup & Canonical Migrations
-When client credentials are provided, execute the migrations in order:
-1. `supabase/migrations/20261004000001_initial_schema.sql` (schema, tables, constraints, indexes).
-2. `supabase/migrations/20261004000002_security_hardening.sql` (search_path isolation on `is_admin()`, anti-privilege escalation trigger `trg_prevent_profile_role_escalation` raising SQL `42501`, immutable audit logs table, and storage policies).
-*(Note: `src/lib/supabase/schema.sql` is preserved strictly as a consolidated reference snapshot).*
-
-### 5.3 Idempotent Production Seed (`npm run seed`)
-- Run with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
-- Inserts via PostgreSQL `.upsert({ onConflict: 'slug' })` guaranteeing zero duplicate records on re-runs.
-- Seeded counts: 12 countries, 8 academic fields, 14 providers, 14 scholarships, 5 guides.
-
-### 5.4 Supabase Storage Provisioning
-Three public buckets: `scholarship-covers`, `provider-logos`, `guide-images`.
-- Public read access enabled.
-- Write access restricted to authenticated administrators via RLS.
-- MIME whitelist: `image/jpeg`, `image/png`, `image/webp`, `image/avif`, `image/svg+xml`.
-- Maximum upload size: 5MB.
-
-### 5.5 Administrator Provisioning & Golden Path
-- Bootstrap script: [`scripts/bootstrap-admin.ts`](file:///c:/Users/Abud/Desktop/GitHub/Grantly/scripts/bootstrap-admin.ts) accepts `ADMIN_EMAIL` and `ADMIN_PASSWORD` from environment.
-- Rejects weak passwords and placeholder domains.
-- First Login Acceptance: Navigate to `/en/admin/login` -> authenticate via Supabase Auth -> middleware verifies cryptographic token and confirms `role === 'admin'` in `public.profiles` -> access `/admin` dashboard -> verify CMS access -> logout.
-
-### 5.6 Domain, DNS & SSL Configuration
-- **DNS Records**:
-  - Apex `A` record: `@ -> SERVER_IPV4`.
-  - Subdomain `CNAME`: `www -> CLIENT_DOMAIN`.
-- **Cloudflare Compatibility**: Initial DNS set to DNS-Only (grey cloud) -> obtain Let's Encrypt SSL certificate via Certbot on VPS -> verify HTTPS origin -> enable Cloudflare Proxy (orange cloud) with SSL mode set to **Full (Strict)**.
-- **HSTS Policy**: Starts with safe conservative header (`max-age=86400` / 1 day without preload) to prevent accidental domain lockout during client DNS onboarding.
-
-### 5.7 Deployment & Rollback Execution
-- **Deployment Script (`deploy/deploy.sh`)**:
-  1. Full pre-cutover quality gates (`npm ci`, `npx tsc --noEmit`, `npm run lint`, `npm test`, `npm run preflight`, `npm run build`).
-  2. Atomic symlink switch (`/var/www/grantly/releases/<timestamp>` -> `current`).
-  3. PM2 zero-downtime cluster reload on configurable `APP_PORT`.
-  4. Post-deployment verification confirming both `/api/health` = 200 and `/api/ready` = 200.
-- **Rollback Script (`deploy/rollback.sh`)**:
-  - Atomically reverts `current` symlink to previous release in `releases/`.
-  - Reloads PM2 and validates `/api/health` and `/api/ready`.
-  - Exact rollback command: `/var/www/grantly/current/deploy/rollback.sh`.
+- Added indexes for `providers.country_id` and `scholarships.provider_id` foreign keys.
+- RLS auth calls use init-plan-friendly `(SELECT auth.uid())` form.
+- Redundant permissive SELECT policies were removed.
+- Remaining performance advisor notices are only unused-index informational notices expected on a brand-new empty database.
 
 ---
 
-## 6. Client Ownership & Handoff Tracking
+## 4. Storage
 
-| Production Component | Intended Client Owner | Transfer / Provisioning Action |
-| :--- | :--- | :--- |
-| **Source Repository** | Client GitHub Organization | Repository transfer or client mirror |
-| **Supabase Project** | Client Account / Org | Client invites admin, client billing attached |
-| **Application VPS** | Client Cloud Account (Hetzner / DO / AWS) | Client provisions VPS, client billing attached |
-| **Domain & DNS** | Client Registrar / Cloudflare | Client retains registrar ownership & DNS control |
-| **Administrator Account** | Client Staff Member | Provisioned via `bootstrap:admin` with client email |
-| **Transactional Email / SMTP** | Client Mail Service | Client configures API credentials in Supabase |
-| **Database Backups** | Client Storage / S3 / Supabase | Daily automated backups or manual snapshot cron |
+Production Storage buckets exist:
 
-### Estimated Operational Run Costs
-> [!NOTE]
-> Check current provider pricing before provisioning. Third-party rates, free-tier quotas, and server options fluctuate over time.
-- **VPS (2 vCPU, 4GB RAM, Ubuntu 22.04 LTS)**: ~$6 - $12 / month.
-- **Supabase Database**: Free tier ($0) for initial launch; Pro tier ($25 / month) recommended for automated daily backups.
-- **DNS & CDN**: Cloudflare Free tier ($0).
-- **Domain Renewal**: ~$10 - $14 / year.
-- **Estimated Run Total**: ~$6 - $37 / month.
+| Bucket | Public Read | Write | Size Limit | MIME Types |
+| --- | --- | --- | --- | --- |
+| `scholarship-covers` | Yes | Admin only | 5 MB | JPEG, PNG, WebP, AVIF |
+| `provider-logos` | Yes | Admin only | 2 MB | JPEG, PNG, WebP, SVG |
+| `guide-images` | Yes | Admin only | 5 MB | JPEG, PNG, WebP, AVIF |
+
+Storage RLS policies are installed for public reads and admin-only insert/update/delete operations.
 
 ---
 
-## 7. Project Completion Assessment
+## 5. Seed State
 
-- **Overall Project Completion**: **95%**
-- **Code & Feature Scope**: **100% Complete** (MVP scope closed; all user/admin/CMS journeys implemented, tested, and verified).
-- **Packaging & Operations**: **100% Complete** (Docker/PM2 standalone build, Nginx template, atomic deployment, rollback script, test suite, CI quality gates).
-- **Live Infrastructure Deployment**: **Awaiting Client Inputs** (Target domain, VPS access, and client Supabase project).
+### Important production fix
 
-### Remaining Blockers Before Live Launch
-1. Provisioning of client Supabase project (`URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`).
-2. Provisioning of Ubuntu 22.04 LTS VPS host and SSH access credentials.
-3. DNS configuration pointing `CLIENT_DOMAIN` to `SERVER_HOST`.
-4. Supplying client administrator email and password at deployment runtime.
+The original seed fixtures use readable IDs such as `c-uk`, `p-fcdo`, and `sch-01`, while the production schema uses PostgreSQL UUID columns. A real production seed using the previous script would therefore have failed even though its dry-run could pass.
+
+`scripts/seed.ts` has been corrected to:
+
+- deterministically map fixture IDs to UUIDs;
+- preserve all country/provider/scholarship foreign-key relationships;
+- validate duplicate slugs;
+- validate referenced countries/providers before writes;
+- retain idempotent upserts;
+- require a server-side Supabase secret/service-role key;
+- exit non-zero on any write failure.
+
+### Current live data state
+
+The initial catalog has **not yet been written** to the production database. Core content tables are currently empty.
+
+Reason: the connected Supabase management integration intentionally exposes project management and publishable keys but does not expose the server-side secret/service-role key required by the repository seed script. The secret must be supplied only through a secure runtime environment during the deployment pass.
+
+Expected initial seed after execution:
+
+- 12 countries
+- 8 academic fields
+- 14 providers
+- 14 scholarships
+- 5 guides
+
+Canonical command:
+
+```bash
+npm run seed
+```
+
+Never store or print the secret/service-role key.
+
+---
+
+## 6. Auth / Admin / Email
+
+### Auth
+
+- Supabase Auth backend is available.
+- Production Site URL / redirect URLs are still pending the final client domain.
+- No localhost URL should remain as the production primary callback after launch.
+
+### Admin
+
+- No real production administrator has been created.
+- This is intentional: client-approved admin email/password are still required.
+- Production bootstrap remains:
+
+```bash
+npm run bootstrap:admin
+```
+
+Credentials must be supplied through secure runtime environment variables and must never be committed.
+
+### Email
+
+- Password recovery implementation exists.
+- Custom production SMTP is not configured yet.
+- SMTP configuration depends on client/domain email decisions.
+
+---
+
+## 7. Application / Deployment State
+
+The application package remains prepared for:
+
+- Next.js standalone output
+- PM2 process supervision
+- Nginx reverse proxy
+- atomic timestamped releases under `/var/www/grantly/releases/`
+- `/var/www/grantly/current` symlink
+- `/api/health`
+- `/api/ready`
+- rollback script
+
+The authorized shared production VPS is now known, but **Grantly has not been deployed to it yet**.
+
+Deployment must inspect existing ports and services before selecting `APP_PORT` and must not modify unrelated production applications.
+
+---
+
+## 8. CI / Verification
+
+Previous local quality gates passed before the latest Supabase integration work.
+
+The latest GitHub Actions run currently fails during `npm ci` because `package-lock.json` is not fully synchronized with the dependency graph on Linux (`@emnapi/runtime` / `@emnapi/core` missing from the lockfile). GitHub Actions is also still configured for Node `20.18.0`, while current Supabase JS packages require Node 22+.
+
+This is a **real release blocker** and must be corrected before production deployment. Do not describe CI as green until a clean GitHub Actions run passes.
+
+---
+
+## 9. Current Completion Assessment
+
+- **MVP feature scope**: 100%
+- **Production Supabase schema/security/storage**: ~95%
+- **Production catalog seed**: Pending
+- **Production Auth URL configuration**: Pending final domain
+- **Production admin**: Pending client credentials
+- **Production SMTP**: Pending client decision/credentials
+- **VPS application deployment**: Pending
+- **DNS / TLS**: Pending
+- **Overall client-deliverable project**: ~96%
+
+---
+
+## 10. Remaining Blockers
+
+1. Repair Linux-reproducible `package-lock.json` and move CI/runtime to supported Node 22 LTS; obtain a green CI run.
+2. Supply the Supabase server-side secret/service-role key securely at runtime and execute the corrected production seed.
+3. Provide the final client domain.
+4. Configure Supabase Auth Site URL / redirects for that domain.
+5. Provide client administrator email/password securely and run `bootstrap:admin`.
+6. Configure custom SMTP if required for production email reliability.
+7. Deploy Grantly to the authorized VPS using an unused internal port.
+8. Configure Nginx, DNS, HTTPS, live smoke tests, backup, and client handoff.
+
+---
+
+## 11. Safety Confirmation
+
+- No secret/service-role key was written to Git.
+- No administrator password was created or stored.
+- No DNS record was changed.
+- No SSL certificate was issued.
+- No Grantly application deployment to the VPS occurred in this Supabase provisioning pass.
+- Existing unrelated production applications were not modified.
