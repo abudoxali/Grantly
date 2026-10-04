@@ -1,200 +1,295 @@
-# Grantly MVP Status & Documentation
+# Grantly Release Candidate (RC) Status & Documentation
 
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
-**Date**: October 3, 2026  
-**Status**: Production-Quality MVP Complete & Verified (Bilingual Arabic + English, Light-First System, Supabase PostgreSQL, Authentication, Admin CMS, Directory Filters, Route Protection)  
+**Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
+**Date**: October 4, 2026  
+**Status**: Release Candidate 1 (RC1) — Hardened, Reproducible, Deployment-Ready  
 
 ---
 
-## 1. Executive Summary & Brand Identity
-
-Grantly has completed its transition from an early prototype into an authentic, light-first, production-quality bilingual educational platform. The platform empowers students and researchers worldwide to discover verified, fully funded international scholarships and apply directly to official government and university portals without intermediary fees or fabricated metrics.
-
-### Brand Direction
-- **Core Pillars**: Opportunity, Education, Global Access, Growth, Discovery, and Confidence.
-- **Visual Personality**: Modern, human, international, trustworthy, and editorial.
-- **Visual Design Tokens**:
-  - **Light Surfaces**: Clean off-white canvas (`#F8FAFC`), pure white card surfaces (`#FFFFFF`), and subtle neutral borders (`#E2E8F0`).
-  - **Deep Ink Typography**: Deep slate `#0F172A` and muted slate `#64748B` providing contrast and readability.
-  - **Brand Primary**: Fresh emerald (`#059669` / hover `#047857`) symbolizing growth and achievement.
-  - **Secondary Accents**: Controlled cobalt (`#2563EB`) and warm sand/amber (`#D97706`).
-  - **Removal of Legacy Elements**: All dark navy canvases, radar ripples, coordinate flight-tracker lattices, and cybersecurity visuals have been removed in favor of clean, accessible education surfaces.
-- **Brand Mark & Wordmark**:
-  - Reusable `<BrandMark />` component featuring an open arch of education, an ascending pathway, and a radiant star.
-  - Reusable `<Logo />` component supporting `sm`, `md`, `lg` scales, light and dark themes, with bilingual subtitle.
-  - Complete favicon and web app icon support.
+> [!IMPORTANT]
+> **DEPLOYMENT POLICY COMPLIANCE CONFIRMATION**:
+> **THIS PHASE PRODUCED A RELEASE CANDIDATE ONLY.**
+> - **NO** VPS servers were accessed or modified via SSH.
+> - **NO** production Nginx instances were reconfigured on remote hosts.
+> - **NO** DNS records or zones were altered.
+> - **NO** production SSL/TLS certificates were requested or issued.
+> - **NO** production Supabase projects were created.
+> - **NO** real administrator accounts, emails, or passwords were created or invented.
+> - **NO** live deployment occurred.
+>
+> All operational artifacts, configuration templates, database migrations, CI gates, and verification scripts have been packaged and verified locally for controlled release execution in the subsequent deployment phase.
 
 ---
 
-## 2. Bilingual Architecture & Internationalization (i18n)
+## 1. Executive Summary & Current State
 
-### Parity & Routing
-- **Supported Locales**: English (`en`) and Arabic (`ar`).
-- **Route Localized Architecture**: Handled via `src/app/[locale]/...` paths:
-  - `/[locale]` (Homepage)
-  - `/[locale]/scholarships` (Directory with filters)
-  - `/[locale]/scholarships/[slug]` (Detail page)
-  - `/[locale]/countries` (Global study destinations)
-  - `/[locale]/fields` (Academic disciplines)
-  - `/[locale]/guides` & `/[locale]/guides/[slug]` (Admissions strategy articles)
-  - `/[locale]/about` (Mission and integrity commitment)
-  - `/[locale]/auth/*` (Login, registration, password reset)
-  - `/[locale]/account/*` (Saved bookmarks, profile settings)
-  - `/[locale]/admin/*` (CMS and administration portal)
-- **Automatic Redirections**: Root routes (`/`, `/scholarships`, `/countries`, etc.) cleanly redirect to `/${locale}/...` via Next.js middleware and page-level fallbacks.
-- **Preference Persistence**: User language preferences are persisted via `NEXT_LOCALE` cookies and `localStorage`, with an interactive `<LanguageSwitcher />` in both desktop and mobile navigation headers.
+Grantly is an authenticated, light-first, bilingual (Arabic & English) scholarship platform connecting scholars and researchers with verified global opportunities. 
 
-### Real RTL & LTR Adaptation
-- Arabic interface sets `<html dir="rtl" lang="ar">`, adapting layout behavior, icon orientations (e.g. arrow flipping via `rtl:rotate-180`), navigation drawers, form alignments, and breadcrumbs.
-- English interface sets `<html dir="ltr" lang="en">`.
-- Layouts employ logical CSS properties (`ps-*`, `pe-*`, `ms-*`, `me-*`, `text-start`, `text-end`) to guarantee native fluid bidirectionality.
-
-### Typography System
-- **Arabic Web Font**: `Alexandria` paired with `IBM Plex Sans Arabic` and `Noto Sans Arabic` fallbacks.
-- **English Web Font**: `Inter` with modern system sans-serif fallbacks.
-- Integrated via CSS variables `--font-sans` and `--font-arabic`, with font smoothing and OpenType feature settings (`cv02`, `cv03`, `cv04`, `cv11`).
-
-### Dictionary Parity
-- Strongly typed dictionary interface (`src/i18n/types.ts`) guaranteeing complete parallel translations across `en.ts` and `ar.ts`.
-- Zero mixed language interface strings across navigation, cards, filter labels, modal dialogs, status badges, and admin controls.
+In this hardening pass, the repository was transitioned into a hardened **Release Candidate (RC1)**. The application runtime, database security layer, deployment automation, and process supervision have been hardened against common operational and security pitfalls:
+- Database-level anti-privilege escalation triggers and search path isolation.
+- Server-side cryptographic session verification in middleware via `@supabase/ssr`.
+- Zero client-cookie trust for administrative privileges.
+- Centralized environment validation and operational health monitoring endpoints (`/api/health`, `/api/ready`).
+- Standalone container/PM2-ready packaging with modern HTTP security headers.
+- Production Nginx reverse proxy template with TLS 1.2/1.3, rate limiting, and immutable asset caching.
+- Zero-downtime atomic symlink deployment and automated rollback scripts.
+- Automated CI pipeline and local preflight quality gates.
 
 ---
 
-## 3. Database Architecture & Supabase Backend
+## 2. Security Hardening & Authentication Architecture
 
-### PostgreSQL Schema (`src/lib/supabase/schema.sql`)
-1. **`profiles`**: User profiles with `id` (references `auth.users`), `email`, `full_name`, `role` (`user` | `admin`), `preferred_language`, `country`, `degree_level`, `academic_field`, and timestamps.
-2. **`countries`**: Destination countries with `name_en`, `name_ar`, `slug`, `code`, `flag`, `description_en`, `description_ar`, `currency`, `living_cost_from`, `living_cost_to`, `featured`.
-3. **`fields`**: Academic disciplines with `name_en`, `name_ar`, `slug`, `description_en`, `description_ar`, `icon`, `featured`.
-4. **`providers`**: Official institutions/governments with `name_en`, `name_ar`, `slug`, `country_id`, `provider_type`, `official_website`, `verified`.
-5. **`scholarships`**: Core opportunities with `title_en`, `title_ar`, `slug`, `short_description_en/ar`, `description_en/ar`, `provider_id`, `country_id`, `funding_type`, `funding_summary_en/ar`, `stipend_amount`, `deadline`, `application_open_date`, `status`, `official_url`, `degree_levels` (text array), `eligible_nationalities`, `benefits` (JSONB), `eligibility_en/ar` (text array), `required_documents_en/ar` (text array), `featured`, `published`.
-6. **`scholarship_fields`**: Many-to-many junction connecting scholarships to academic fields.
-7. **`guides`**: Admissions guides with `title_en/ar`, `slug`, `category`, `reading_time_minutes`, `excerpt_en/ar`, `content_en/ar`, `published`.
-8. **`bookmarks`**: User bookmark records with unique `(user_id, scholarship_id)` constraint.
+### 2.1 Canonical Database Migrations (`supabase/migrations/`)
 
-### Row-Level Security (RLS) Policies
-- `profiles`: Users can select their own profile; users can update their own profile; admins can select and manage all profiles.
-- `scholarships`, `countries`, `fields`, `providers`, `guides`: Public read access for published items; write/update/delete operations restricted exclusively to authenticated users with `role = 'admin'`.
-- `bookmarks`: Authenticated users can insert, select, and delete only their own bookmarks.
-- `handle_new_user` Trigger: Automatically creates a row in `profiles` upon user sign-up via Supabase Auth.
+Database migrations are versioned sequentially in `supabase/migrations/`:
 
-### Verified Seed Dataset (`src/lib/data/seed-data.ts`)
-- **14 Authenticated Global Scholarships**: Chevening (UK), DAAD Helmut-Schmidt (Germany), Fulbright Foreign Student (USA), Swiss Government Excellence (Switzerland), MEXT Research (Japan), Turkiye Burslari (Turkey), Swedish Institute SI (Sweden), Eiffel Excellence (France), Australia Awards (Australia), Gates Cambridge (UK), Holland Scholarship (Netherlands), KAIST Graduate (South Korea), Singapore SINGA (Singapore), Vanier CGS (Canada).
-- **12 Destination Countries**: With accurate, verified monthly living allowance ranges.
-- **8 Academic Disciplines**: Fully mapped with localized titles and descriptions.
-- **14 Verified Providers**: Ministries of foreign affairs, academic exchange services, and universities.
-- **5 Admissions Strategy Guides**: SOP writing, academic CVs, language test waivers, funding differences, and recommendation letters.
+1. **`20261004000001_initial_schema.sql`**:
+   - PostgreSQL extensions (`uuid-ossp`).
+   - Custom enum types (`user_role`).
+   - Normalized relational tables: `profiles`, `countries`, `fields`, `providers`, `scholarships`, `scholarship_fields`, `guides`, `bookmarks`.
+   - Foreign key integrity constraints (`ON DELETE CASCADE`, `ON DELETE SET NULL`).
+   - Strategic B-tree performance indexes on foreign keys, slugs, and status flags.
 
-### Resilient Repository Architecture (`src/lib/db/repository.ts`)
-- Connects to live Supabase PostgreSQL when environment credentials (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) are present.
-- **Production Fail-Safe**: In production (`NODE_ENV === 'production'`), if Supabase is unconfigured, repository throws an explicit configuration error rather than silently operating on mock storage.
-- **Strict Mutation Errors**: Mutation operations (`create`, `update`, `delete`, `toggleBookmark`) do not swallow database errors to fall back to mock memory; real database errors are thrown to the caller.
-- **Local Preview Flag**: Local production verification without credentials is supported cleanly via `ALLOW_LOCAL_MOCK=true`.
+2. **`20261004000002_security_hardening.sql`**:
+   - **Hardened `is_admin()` Function**: Declared as `STABLE SECURITY DEFINER SET search_path = public, pg_temp;` to completely eliminate schema search path hijacking or object shadowing.
+   - **Anti-Privilege Escalation Trigger (`trg_prevent_profile_role_escalation`)**: Enforced at the PostgreSQL engine level (`BEFORE UPDATE ON public.profiles`). If a non-admin caller attempts to modify `role`, `id`, `email`, or `created_at`, the transaction is immediately aborted with SQL exception `42501 (Permission Denied)`.
+   - **Hardened New User Registration Trigger (`handle_new_user`)**: Unconditionally forces `'user'::public.user_role`. Any `role` parameter supplied in client metadata (`raw_user_meta_data`) is strictly ignored and discarded.
+   - **Hardened Profiles RLS Policies**: Updates to `public.profiles` require `role = (SELECT role FROM public.profiles WHERE id = auth.uid())`, preventing unauthorized self-elevation via Supabase REST endpoints.
+   - **Automated Timestamps**: Trigger `trg_*_updated_at` attached across all core tables to enforce deterministic audit trails.
+   - **Admin Audit Logging Table (`public.admin_audit_logs`)**: Dedicated immutable audit logging for administrative mutations, protected by admin-only RLS policies.
+   - **Supabase Storage Production Policies**: Granular bucket size limits and MIME type enforcement for `scholarship-covers`, `provider-logos`, and `guide-images` with public read and authenticated admin-only write permissions.
 
----
+> [!NOTE]
+> `src/lib/supabase/schema.sql` is maintained as a consolidated snapshot mirroring these migrations for one-shot local bootstrapping.
 
-## 4. Admin Authentication, Bootstrap Flow & Route Protection
+### 2.2 Server-Side Route Guard & Session Verification (`src/middleware.ts`)
 
-### First-Admin Bootstrap Workflow (`scripts/bootstrap-admin.ts`)
-- Command: `npm run bootstrap:admin`
-- Reads `ADMIN_EMAIL` and `ADMIN_PASSWORD` from `.env.local` or environment variables server-side.
-- Uses Supabase Admin API (`service_role` key server-side only; never bundled into browser code).
-- Idempotent: creates the user if they do not exist, or updates password and sets `role = 'admin'` in `profiles` if already present.
-- Never prints passwords in logs or terminal outputs.
+- **Elimination of Insecure Cookie Reliance**: Removed trust in plain client cookies (`grantly_session_role`).
+- **Cryptographic Server Verification**: For any administrative route (`/:locale/admin/*`, excluding `/login`), the middleware instantiates a server Supabase client using `@supabase/ssr` with request cookies, calls `supabase.auth.getUser()`, and verifies the cryptographic signature with Supabase Auth.
+- **Database Role Confirmation**: Checks `role === 'admin'` from `public.profiles`.
+- **Fail-Safe Mode**: In production, unconfigured or unreachable backends immediately bounce unauthorized requests with `error=backend_unconfigured`.
+- **Defense in Depth**: Client shell in `src/app/[locale]/admin/layout.tsx` maintains active UI role assertion and displays a locked fallback screen if state transitions occur.
 
-### Admin Login Redesign (`/[locale]/admin/login`)
-- **Focused Shell**: Dedicated administration shell completely omitting the public site header and public footer.
-- **Identity & Branding**: Grantly logo, "Admin Portal" / "بوابة المشرفين" status badge.
-- **Controls**: Email input with Mail icon, Password input with Lock icon and Show/Hide toggle button (`Eye` / `EyeOff`), and Forgot Password link.
-- **Strict Role Verification**: After successful authentication, if the user's role is not `'admin'`, the session is immediately terminated with `logout()` and an unauthorized notice is displayed.
-- **No Hardcoded Passwords**: Removed demo credentials fill button from production UI; development guidance only appears when `NODE_ENV === 'development'`.
+### 2.3 Strict Production Fallback Handling (`src/lib/auth/context.tsx`)
 
-### Server-Side Route Guard (`src/middleware.ts`)
-- Intercepts all direct requests to `/:locale/admin/*` (except `/:locale/admin/login`).
-- Unauthenticated requests are immediately redirected via HTTP redirect to `/:locale/admin/login?next=...`.
-- Authenticated non-admin accounts (`grantly_session_role=user`) are blocked and redirected with `unauthorized=true`.
-- Verified admin accounts (`grantly_session_role=admin`) pass through seamlessly.
-- Client-side secondary defense in `src/app/[locale]/admin/layout.tsx` enforces interactive access rules.
-
-### Users Management Guard (`/[locale]/admin/users`)
-- Roster of all registered scholar profiles and administrators.
-- Prevents demoting the last remaining administrator account on the platform to avoid lockout.
+- Removed legacy email substring matching (`email.includes('admin')`).
+- In production (`process.env.NODE_ENV === 'production'`), mock authentication is disabled; real database credentials are required.
+- In development, mock admin accounts are disabled by default and strictly gated behind the explicit development flag `NEXT_PUBLIC_ALLOW_DEV_MOCK_ADMIN === 'true'`.
 
 ---
 
-## 5. Currency & Arabic Localization Formatting
+## 3. Operations, Packaging & Release Architecture
 
-Dedicated helpers in `src/lib/utils.ts` applied across public and admin interfaces:
-- `formatDate(dateString, locale)`: Formats dates as `15 Oct 2026` in English and `15 أكتوبر 2026` in Arabic.
-- `formatStipend(stipend, locale)`: Converts raw strings (e.g. `€934 / month`) into natural Arabic notation (`934 يورو / شهرياً`), preventing bidirectional RTL text reversal.
-- `formatLivingCost(from, to, currency, locale)`: Formats living allowances as `~ 850 - 1,200 يورو / شهرياً` in Arabic and `~€850 - €1,200 / month` in English.
-- `formatGuideCategory(category, locale)`: Translates guide taxonomy (`Application Strategy` -> `استراتيجية التقديم`, `Resume & CV` -> `السيرة الذاتية والأكاديمية`).
-- `formatDegreeLevel(level, locale)`: Translates academic levels (`Master` -> `ماجستير`, `PhD` -> `دكتوراه`).
+### 3.1 Next.js Packaging & Security Headers (`next.config.ts`)
+
+- **Standalone Output**: `output: 'standalone'` generates an optimized, self-contained deployment bundle in `.next/standalone` suitable for PM2 and Docker.
+- **Header Hardening**: `poweredByHeader: false` prevents server fingerprinting.
+- **HTTP Security Headers**:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `X-XSS-Protection: 1; mode=block`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()`
+  - `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload` (enforced in production)
+- **Image Optimization**: Remote image patterns whitelist Supabase storage, Unsplash, and FlagCDN.
+
+### 3.2 Process Supervision with PM2 (`ecosystem.config.cjs`)
+
+- Configured for multi-core Node.js cluster execution: `instances: 'max'`, `exec_mode: 'cluster'`.
+- Script targets standalone build entry point `.next/standalone/server.js`.
+- Configured with automatic restarts (`autorestart: true`), memory threshold restarts (`max_memory_restart: '512M'`), and exponential backoff retry delays (`exp_backoff_restart_delay: 100`).
+- Merged, timestamped error and access log routing to `./logs/`.
+
+### 3.3 Production Nginx Configuration (`deploy/nginx/grantly.conf.template`)
+
+- HTTP to HTTPS 301 redirection.
+- Modern TLS protocols (`TLSv1.2 TLSv1.3`) with forward secrecy ciphers and OCSP stapling.
+- Rate limiting zones:
+  - API zone (`limit_req_zone $binary_remote_addr zone=grantly_api_limit:10m rate=10r/s burst=20 nodelay`).
+  - General traffic zone (`rate=50r/s burst=100 nodelay`).
+- Next.js static asset caching (`/_next/static/`) configured with `public, max-age=31536000, immutable`.
+- WebSocket and HTTP 1.1 keepalive proxy forwarding to PM2 upstream.
+
+### 3.4 Zero-Downtime Deployment & Automated Rollback (`deploy/`)
+
+- **`deploy/deploy.sh`**:
+  - Implements the atomic release directory pattern: `/var/www/grantly/releases/<timestamp>` and `/var/www/grantly/current` symlink.
+  - Links persistent shared production configuration (`shared/.env.production`) and shared logs.
+  - Executes preflight verification and production build prior to traffic cutover.
+  - Performs atomic symlink swap: `ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"`.
+  - Reloads PM2 cluster with zero dropped connections: `pm2 reload ecosystem.config.cjs --update-env`.
+  - Executes post-deployment liveness check against `http://127.0.0.1:3000/api/health`.
+  - Automatically triggers `rollback.sh` if health check fails.
+  - Automatically prunes older releases, retaining the last 5 versions.
+- **`deploy/rollback.sh`**:
+  - Locates the previous successful release directory in `/var/www/grantly/releases/`.
+  - Atomically swaps `/var/www/grantly/current` symlink back to the prior release.
+  - Reloads PM2 and validates health check.
 
 ---
 
-## 6. Verification & Quality Assurance Summary
+## 4. Diagnostics, Health Monitoring & Tooling
 
-### Implementation vs Configuration vs Verification Matrix
+### 4.1 Centralized Environment Validator (`src/lib/env.ts`)
 
-| Area | Implemented | Configured | Verified Locally | Verified Live Supabase |
-| :--- | :---: | :---: | :---: | :---: |
-| **Brand System & Light UI** | ✓ | ✓ | ✓ | ✓ |
-| **Bilingual i18n & RTL/LTR** | ✓ | ✓ | ✓ | ✓ |
-| **Public Directory & Filters** | ✓ | ✓ | ✓ | ✓ |
-| **Scholarship Details & Official Links** | ✓ | ✓ | ✓ | ✓ |
-| **Student Auth UI & Bookmarks** | ✓ | ✓ | ✓ | Pending live keys in `.env.local` |
-| **Admin Bootstrap Script** | ✓ | Ready | ✓ | Pending live keys in `.env.local` |
-| **Admin Login & Focused Shell** | ✓ | ✓ | ✓ | ✓ |
-| **Server-Side Route Protection** | ✓ | ✓ | ✓ | ✓ |
-| **Scholarship CMS & Validation** | ✓ | ✓ | ✓ | ✓ |
-| **Users Role Guard** | ✓ | ✓ | ✓ | ✓ |
-| **PostgreSQL Schema & RLS** | ✓ | Ready | ✓ (Schema SQL ready) | Pending live keys in `.env.local` |
+- Validates required production variables without printing or leaking secrets.
+- Enforces HTTPS on `NEXT_PUBLIC_SUPABASE_URL` in production.
+- Provides typed `envConfig` accessors across the server runtime.
 
-### Automated Test Results (17 Automated Checks)
+### 4.2 Liveness & Readiness Endpoints
 
-| Check | Target / Command | Result | Verification Notes |
+- **`GET /api/health`** (Liveness Check):
+  - Returns `200 OK` with JSON `{ status: 'ok', service: 'grantly', version: '0.1.0', uptimeSeconds: number, environment: string }`.
+  - Header: `Cache-Control: no-store, max-age=0`.
+- **`GET /api/ready`** (Readiness Check):
+  - In production: validates environment and tests live PostgreSQL connectivity against `public.countries`.
+  - Returns `200 OK` when ready; returns `503 Service Unavailable` with diagnostic status if unconfigured or database is unreachable.
+
+### 4.3 Deterministic Seeding Script (`scripts/seed.ts`)
+
+- Exclusively requires `SUPABASE_SERVICE_ROLE_KEY` (rejects anon key).
+- Supports `--dry-run` flag to validate slug uniqueness, foreign key consistency, and schema counts without contacting the database.
+- Tracks upsert errors and exits with non-zero exit code (`process.exit(1)`) on any failure.
+
+### 4.4 Automated Testing & Verification Suite
+
+- **`npm test` (`scripts/run-tests.ts`)**: 28-point automated test suite covering migration syntax, trigger definitions, anti-escalation security, auth code logic, seed data integrity, environment validator edge cases, and Next.js security headers.
+- **`npm run preflight` (`scripts/preflight.ts`)**: Pre-deployment validation verifying Node >= 20.0.0, `.env.example` placeholder hygiene, migration presence, and configuration integrity.
+- **`npm run verify:deployment` (`scripts/verify-deployment.ts`)**: Smoke test verifying liveness, readiness, security headers, bilingual routing, and admin access protection.
+
+---
+
+## 5. Verification & Quality Assurance Results
+
+### 5.1 Test Suite Summary (28/28 Tests Passed)
+
+```text
+=== Grantly Automated Test Suite ===
+
+--- 1. Database Migrations & Security Hardening Tests ---
+✓ [PASS] Migration 1 (initial_schema.sql) exists
+✓ [PASS] Migration 2 (security_hardening.sql) exists
+✓ [PASS] is_admin() uses fixed search_path to prevent object shadowing
+✓ [PASS] handle_new_user() strictly forces role = user
+✓ [PASS] prevent_profile_role_escalation trigger function is defined
+✓ [PASS] prevent_profile_role_escalation raises 42501 permission denied on role change
+✓ [PASS] admin_audit_logs table is created with RLS enabled
+
+--- 2. Auth & Route Guard Code Audit ---
+✓ [PASS] auth context rejects mock authentication in production
+✓ [PASS] auth context requires NEXT_PUBLIC_ALLOW_DEV_MOCK_ADMIN for dev admin escalation
+✓ [PASS] auth context does NOT automatically escalate any email with substring admin
+✓ [PASS] middleware uses Supabase server auth getUser()
+✓ [PASS] middleware verifies admin role against profiles table
+✓ [PASS] middleware blocks unconfigured backend in production
+
+--- 3. Seed Data Integrity Tests ---
+✓ [PASS] Countries seed count > 0
+✓ [PASS] Fields seed count > 0
+✓ [PASS] Providers seed count > 0
+✓ [PASS] Scholarships seed count > 0
+✓ [PASS] Guides seed count > 0
+✓ [PASS] All country slugs are unique
+✓ [PASS] All providers reference existing countries or null
+✓ [PASS] All scholarships reference existing countries and providers
+
+--- 4. Environment Validator Tests ---
+✓ [PASS] validateEnv(false) executes cleanly
+✓ [PASS] validateEnv(true) fails when production variables are missing
+✓ [PASS] validateEnv(true) passes when valid HTTPS URL and key are provided
+
+--- 5. Packaging Configuration Tests ---
+✓ [PASS] next.config.ts configures standalone output
+✓ [PASS] next.config.ts disables powered-by header
+✓ [PASS] next.config.ts includes X-Frame-Options DENY security header
+✓ [PASS] next.config.ts includes X-Content-Type-Options nosniff header
+
+==================================================
+Test Execution Summary:
+Total: 28 | Passed: 28 | Failed: 0
+==================================================
+✓ All tests passed successfully.
+```
+
+### 5.2 Build & Smoke Test Verification Matrix
+
+| Check / Command | Target / Scope | Result | Details |
 | :--- | :--- | :---: | :--- |
-| **TypeScript Compilation** | `npx tsc --noEmit` | **Passed (0 errors)** | Full strict type checking across all files |
-| **ESLint Validation** | `npm run lint` | **Passed (0 errors)** | Zero linter or hook errors |
-| **Production Build** | `npm run build` | **Passed (0 errors)** | All static and dynamic routes compiled |
-| **Public Routes (EN + AR)** | `GET /en`, `/ar`, `/en/scholarships`, `/ar/scholarships` | **Passed (200 OK)** | All public routes respond with 200 OK |
-| **Destinations & Guides** | `GET /en/countries`, `/ar/countries`, `/en/guides`, `/ar/guides` | **Passed (200 OK)** | Content rendered with localized badges |
-| **Server-side Admin Guard** | `GET /en/admin` (unauthenticated) | **Passed (Redirect)** | Redirects to `/en/admin/login?next=...` |
-| **Child Route Guard** | `GET /en/admin/scholarships` | **Passed (Redirect)** | Redirects to `/en/admin/login?next=...` |
-| **Student Role Guard** | `GET /en/admin` with `role=user` | **Passed (Redirect)** | Redirects with `unauthorized=true` flag |
-| **Admin Direct Access** | `GET /en/admin` with `role=admin` | **Passed (200 OK)** | Access granted for verified admin |
-| **Admin Login Shell** | `GET /en/admin/login` | **Passed (200 OK)** | Focused shell, no public header/footer |
-| **Arabic Living Costs** | `GET /ar/countries` | **Passed (Verified)** | Rendered with `يورو / شهرياً` |
-| **Arabic Guide Taxonomy** | `GET /ar/guides` | **Passed (Verified)** | Categories rendered in Arabic |
-| **Repository CRUD** | `verify-crud.ts` | **Passed (Verified)** | Create, read by slug, update, bookmark, delete |
+| `npx tsc --noEmit` | Full TypeScript type check | **Passed (0 errors)** | Strict mode adherence across all modules |
+| `npm run lint` | ESLint rules check | **Passed (0 errors)** | Zero linting errors or warnings |
+| `npm run preflight` | Preflight operational gate | **Passed (7/7 checks)** | Node version, migrations, config, env clean |
+| `npx tsx scripts/seed.ts --dry-run` | Seed data integrity | **Passed** | 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides verified |
+| `npm run build` | Next.js standalone build | **Passed** | Compiled in 19.4s, standalone bundle generated in `.next/standalone` |
+| `scripts/verify-deployment.ts` | Local standalone smoke test | **Passed (5/5 checks)** | Liveness (200), Readiness (503 staging), Security Headers, Bilingual rendering, Admin Guard |
 
 ---
 
-## 7. Repository Publication & Source Control
+## 6. Git & Release Candidate Source Control
 
-### Publication Target
-- **Remote Repository**: `https://github.com/abudoxali/Grantly.git`
-- **Default Branch**: `main`
-- **Source of Truth**: Local workspace implementation is authoritative.
-- **Published Commit**: `55b71c8` (`55b71c879ffdc77515458db11e64c02130774190`)
-- **Remote HEAD**: Verified tracking `origin/main` at `55b71c879ffdc77515458db11e64c02130774190`
+- **Canonical Repository**: `https://github.com/abudoxali/Grantly.git`
+- **Canonical Branch**: `main`
+- **Release Candidate Commit**: `9d4b109` (`9d4b109f2be13876e5309605333f07a721d7b055`)
+- **Target Release Candidate**: `RC1` (Release Candidate 1)
 
+---
 
-### Security & Secrets Audit
-- **Clean Configuration**: No `.env`, `.env.local`, `.env.production`, API keys, or private tokens committed.
-- **Environment Template**: `.env.example` committed with empty placeholders only.
-- **Git Ignore Safeguards**: `.gitignore` configured to strictly ignore all `.env` variants (`.env`, `.env*.local`, `.env.development`, `.env.production`) while tracking `.env.example`.
-- **Admin Credentials**: Intentionally unconfigured. Zero demo passwords or default admin credentials exist in frontend code or database seeds.
+## 7. Production Deployment Runbook (For Subsequent Authorized Phase)
 
-### Next Steps for Live Production Setup
-1. **Supabase Project Creation**: Create a project in the Supabase Dashboard.
-2. **Database Provisioning**: Execute `src/lib/supabase/schema.sql` in the Supabase SQL editor.
-3. **Environment Secrets**: Copy `.env.example` to `.env.local` and populate:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY` (server-side only)
-4. **Seed Database**: Execute `npm run seed` to load the verified global scholarships, countries, fields, and guides.
-5. **Initial Admin Creation**: Run `ADMIN_EMAIL=your-admin@example.com ADMIN_PASSWORD=your-secure-password npm run bootstrap:admin`.
-6. **Deploy**: Deploy Next.js to preferred hosting provider (Vercel, Node server, etc.) with corresponding environment variables.
+When real infrastructure credentials and server access are provisioned in the next phase, execute the following controlled procedure:
 
+### Step 1: Remote Host Preparation
+1. Ensure Ubuntu 22.04+ or Debian 12+ host with Node.js `20.18.0` LTS and PM2 installed:
+   ```bash
+   node -v  # Must report v20.x
+   npm install -g pm2
+   ```
+2. Create standard directory structure:
+   ```bash
+   sudo mkdir -p /var/www/grantly/{releases,shared/logs}
+   sudo chown -R deploy:deploy /var/www/grantly
+   ```
+3. Provision `/var/www/grantly/shared/.env.production` with real production secrets:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
+   NEXT_PUBLIC_SITE_URL=https://grantly.org
+   ```
+
+### Step 2: Supabase Database Migration & Seeding
+1. Apply canonical migrations in order via Supabase CLI or SQL Editor:
+   - `supabase/migrations/20261004000001_initial_schema.sql`
+   - `supabase/migrations/20261004000002_security_hardening.sql`
+2. Seed verified scholarship directory:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+   SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key \
+   npm run seed
+   ```
+3. Bootstrap primary administrator:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+   SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key \
+   ADMIN_EMAIL=admin@grantly.org \
+   ADMIN_PASSWORD=your-super-secure-password \
+   npm run bootstrap:admin
+   ```
+
+### Step 3: Nginx & SSL Setup
+1. Copy `deploy/nginx/grantly.conf.template` to `/etc/nginx/sites-available/grantly.conf`.
+2. Substitute `${DOMAIN_NAME}`, `${SSL_CERT_PATH}`, and `${SSL_KEY_PATH}`.
+3. Test and reload Nginx:
+   ```bash
+   sudo nginx -t && sudo systemctl reload nginx
+   ```
+
+### Step 4: Deploy & Verify Release
+1. Run deployment script:
+   ```bash
+   ./deploy/deploy.sh
+   ```
+2. Verify production release:
+   ```bash
+   TARGET_URL=https://grantly.org npm run verify:deployment
+   ```

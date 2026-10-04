@@ -167,12 +167,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Offline / Demo authentication fallback (non-production only)
-    const role: UserRole = email.toLowerCase().includes('admin') ? 'admin' : 'user';
+    // Offline / Demo authentication fallback (DEVELOPMENT ONLY)
+    if (process.env.NODE_ENV === 'production') {
+      setIsLoading(false);
+      return { error: 'Authentication requires active database connection in production.' };
+    }
+
+    // Only allow dev mock admin if explicitly enabled via environment variable
+    const allowDevMockAdmin = process.env.NEXT_PUBLIC_ALLOW_DEV_MOCK_ADMIN === 'true';
+    const role: UserRole =
+      allowDevMockAdmin && email.toLowerCase() === 'admin@grantly.org' ? 'admin' : 'user';
+
     const mockProfile: Profile = {
       id: role === 'admin' ? 'admin-seed-id' : `user-${Date.now()}`,
       email,
-      full_name: role === 'admin' ? 'Grantly Administrator' : 'Student Scholar',
+      full_name: role === 'admin' ? 'Grantly Administrator (Dev Mock)' : 'Student Scholar',
       role,
       preferred_language: 'en',
       country: 'United Kingdom',

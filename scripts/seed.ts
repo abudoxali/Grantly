@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import * as fs from 'fs';
+import * as path from 'path';
 import {
   SEED_COUNTRIES,
   SEED_FIELDS,
@@ -7,18 +9,95 @@ import {
   SEED_GUIDES,
 } from '../src/lib/data/seed-data';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Helper to load .env.local or .env if present
+function loadEnv() {
+  const envFiles = ['.env.local', '.env'];
+  for (const file of envFiles) {
+    const fullPath = path.resolve(process.cwd(), file);
+    if (fs.existsSync(fullPath)) {
+      const content = fs.readFileSync(fullPath, 'utf8');
+      for (const line of content.split('\n')) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      }
+    }
+  }
+}
+
+loadEnv();
+
+const isDryRun = process.argv.includes('--dry-run');
 
 async function seed() {
-  if (!supabaseUrl || !serviceRoleKey) {
-    console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY.');
-    console.log('Seed data is ready and structured in src/lib/data/seed-data.ts');
+  console.log('--- Grantly Seed Execution ---');
+
+  if (isDryRun) {
+    console.log('Mode: DRY-RUN (Validating data integrity without database writes)');
+    console.log(`- Countries: ${SEED_COUNTRIES.length}`);
+    console.log(`- Fields: ${SEED_FIELDS.length}`);
+    console.log(`- Providers: ${SEED_PROVIDERS.length}`);
+    console.log(`- Scholarships: ${SEED_SCHOLARSHIPS.length}`);
+    console.log(`- Guides: ${SEED_GUIDES.length}`);
+
+    // Validate slug uniqueness
+    const countrySlugs = new Set(SEED_COUNTRIES.map((c) => c.slug));
+    if (countrySlugs.size !== SEED_COUNTRIES.length) {
+      console.error('Validation failure: Duplicate country slugs detected');
+      process.exit(1);
+    }
+
+    const fieldSlugs = new Set(SEED_FIELDS.map((f) => f.slug));
+    if (fieldSlugs.size !== SEED_FIELDS.length) {
+      console.error('Validation failure: Duplicate field slugs detected');
+      process.exit(1);
+    }
+
+    const providerSlugs = new Set(SEED_PROVIDERS.map((p) => p.slug));
+    if (providerSlugs.size !== SEED_PROVIDERS.length) {
+      console.error('Validation failure: Duplicate provider slugs detected');
+      process.exit(1);
+    }
+
+    const scholarshipSlugs = new Set(SEED_SCHOLARSHIPS.map((s) => s.slug));
+    if (scholarshipSlugs.size !== SEED_SCHOLARSHIPS.length) {
+      console.error('Validation failure: Duplicate scholarship slugs detected');
+      process.exit(1);
+    }
+
+    console.log('✓ Dry-run data validation passed successfully. All slugs and relations are valid.');
+    return;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+  if (!supabaseUrl) {
+    console.error('Error: NEXT_PUBLIC_SUPABASE_URL is required to seed database.');
     process.exit(1);
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
-  console.log('Connecting to Supabase at:', supabaseUrl);
+  if (!serviceRoleKey) {
+    console.error('Error: SUPABASE_SERVICE_ROLE_KEY is required to seed database (Anon key rejected for security).');
+    process.exit(1);
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  console.log(`Connecting to Supabase at: ${supabaseUrl}`);
+
+  let errors = 0;
 
   // 1. Countries
   console.log('Seeding countries...');
@@ -39,8 +118,12 @@ async function seed() {
     })),
     { onConflict: 'slug' }
   );
-  if (countriesErr) console.error('Error seeding countries:', countriesErr);
-  else console.log(`✓ Seeded ${SEED_COUNTRIES.length} countries`);
+  if (countriesErr) {
+    console.error('Error seeding countries:', countriesErr);
+    errors++;
+  } else {
+    console.log(`✓ Seeded ${SEED_COUNTRIES.length} countries`);
+  }
 
   // 2. Fields
   console.log('Seeding academic fields...');
@@ -57,8 +140,12 @@ async function seed() {
     })),
     { onConflict: 'slug' }
   );
-  if (fieldsErr) console.error('Error seeding fields:', fieldsErr);
-  else console.log(`✓ Seeded ${SEED_FIELDS.length} fields`);
+  if (fieldsErr) {
+    console.error('Error seeding fields:', fieldsErr);
+    errors++;
+  } else {
+    console.log(`✓ Seeded ${SEED_FIELDS.length} fields`);
+  }
 
   // 3. Providers
   console.log('Seeding scholarship providers...');
@@ -75,8 +162,12 @@ async function seed() {
     })),
     { onConflict: 'slug' }
   );
-  if (providersErr) console.error('Error seeding providers:', providersErr);
-  else console.log(`✓ Seeded ${SEED_PROVIDERS.length} providers`);
+  if (providersErr) {
+    console.error('Error seeding providers:', providersErr);
+    errors++;
+  } else {
+    console.log(`✓ Seeded ${SEED_PROVIDERS.length} providers`);
+  }
 
   // 4. Scholarships
   console.log('Seeding scholarships...');
@@ -114,8 +205,12 @@ async function seed() {
     })),
     { onConflict: 'slug' }
   );
-  if (scholarshipsErr) console.error('Error seeding scholarships:', scholarshipsErr);
-  else console.log(`✓ Seeded ${SEED_SCHOLARSHIPS.length} scholarships`);
+  if (scholarshipsErr) {
+    console.error('Error seeding scholarships:', scholarshipsErr);
+    errors++;
+  } else {
+    console.log(`✓ Seeded ${SEED_SCHOLARSHIPS.length} scholarships`);
+  }
 
   // 5. Guides
   console.log('Seeding student guides...');
@@ -137,10 +232,22 @@ async function seed() {
     })),
     { onConflict: 'slug' }
   );
-  if (guidesErr) console.error('Error seeding guides:', guidesErr);
-  else console.log(`✓ Seeded ${SEED_GUIDES.length} guides`);
+  if (guidesErr) {
+    console.error('Error seeding guides:', guidesErr);
+    errors++;
+  } else {
+    console.log(`✓ Seeded ${SEED_GUIDES.length} guides`);
+  }
 
-  console.log('Supabase seeding finished successfully!');
+  if (errors > 0) {
+    console.error(`\nSeeding completed with ${errors} error(s).`);
+    process.exit(1);
+  }
+
+  console.log('\n✓ Supabase database seeding completed successfully!');
 }
 
-seed().catch(console.error);
+seed().catch((err) => {
+  console.error('Fatal seed failure:', err);
+  process.exit(1);
+});

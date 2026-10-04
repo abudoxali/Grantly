@@ -5,10 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node .next/standalone/server.js",
     "lint": "eslint",
+    "test": "tsx scripts/run-tests.ts",
+    "preflight": "tsx scripts/preflight.ts",
+    "verify:deployment": "tsx scripts/verify-deployment.ts",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "seed": "tsx scripts/seed.ts"
+  },
+  "engines": {
+    "node": ">=20.18.0 <21.0.0"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -29,6 +35,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   }
 }
