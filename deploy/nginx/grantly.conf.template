@@ -1,6 +1,6 @@
 # ==============================================================================
 # Grantly Production Nginx Reverse Proxy Configuration Template
-# Placeholders: ${DOMAIN_NAME}, ${SSL_CERT_PATH}, ${SSL_KEY_PATH}
+# Placeholders: ${DOMAIN_NAME}, ${APP_PORT}, ${SSL_CERT_PATH}, ${SSL_KEY_PATH}
 # ==============================================================================
 
 # Rate limiting zones
@@ -9,7 +9,7 @@ limit_req_zone $binary_remote_addr zone=grantly_general_limit:10m rate=50r/s;
 
 # Upstream Next.js Node cluster managed by PM2
 upstream grantly_upstream {
-    server 127.0.0.1:3000 max_fails=3 fail_timeout=10s;
+    server 127.0.0.1:${APP_PORT} max_fails=3 fail_timeout=10s;
     keepalive 32;
 }
 

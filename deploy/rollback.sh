@@ -38,12 +38,17 @@ ln -sfn "$RELEASES_DIR/$PREVIOUS_RELEASE" "$CURRENT_LINK"
 cd "$CURRENT_LINK"
 pm2 reload ecosystem.config.cjs --update-env
 
-# Verify previous release health
-echo "Verifying health of rolled-back release..."
+# Verify previous release health and database readiness
+echo "Verifying health and readiness of rolled-back release..."
+APP_PORT="${PORT:-3000}"
 sleep 2
-if curl -s -f "http://127.0.0.1:3000/api/health" | grep -q '"status":"ok"'; then
-    echo "✓ Rollback verified successful. System restored to $PREVIOUS_RELEASE."
+
+HEALTH_RESP=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/api/health" || true)
+READY_RESP=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/api/ready" || true)
+
+if [ "$HEALTH_RESP" = "200" ] && [ "$READY_RESP" = "200" ]; then
+    echo "✓ Rollback verified successful. System restored to $PREVIOUS_RELEASE (health: 200, ready: 200 on port $APP_PORT)."
 else
-    echo "CRITICAL: Rolled-back release is also failing health check! Manual intervention required."
+    echo "CRITICAL: Rolled-back release failed verification (health: $HEALTH_RESP, ready: $READY_RESP)! Manual operator intervention required."
     exit 2
 fi

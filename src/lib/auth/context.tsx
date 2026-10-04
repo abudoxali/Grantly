@@ -80,7 +80,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.error('Error fetching Supabase session:', err);
         }
       } else {
-        // Check for local session in localStorage
+        if (process.env.NODE_ENV === 'production') {
+          setIsLoading(false);
+          return;
+        }
+        // Check for local session in localStorage (DEVELOPMENT ONLY)
         try {
           const stored = localStorage.getItem('grantly_mock_session');
           if (stored) {
@@ -271,7 +275,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Fallback registration
+    // Fallback registration (DEVELOPMENT ONLY)
+    if (process.env.NODE_ENV === 'production') {
+      setIsLoading(false);
+      return { error: 'Registration requires active database connection in production.' };
+    }
+
     const newProfile: Profile = {
       id: `user-${Date.now()}`,
       email,

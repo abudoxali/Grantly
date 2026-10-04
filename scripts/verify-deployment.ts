@@ -100,7 +100,27 @@ async function runVerification() {
     });
   }
 
-  // 3. English home & security headers
+  // 3. Root URL (/)
+  try {
+    const res = await fetchUrl(`${targetUrl}/`, { followRedirect: false });
+    if ([200, 301, 302, 307, 308].includes(res.statusCode)) {
+      results.push({ title: 'Root Route (/) returns valid status/redirect', passed: true });
+    } else {
+      results.push({
+        title: 'Root Route (/)',
+        passed: false,
+        message: `Unexpected status code: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'Root Route (/)',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 4. English home & security headers
   try {
     const res = await fetchUrl(`${targetUrl}/en`);
     if (res.statusCode === 200) {
@@ -133,7 +153,7 @@ async function runVerification() {
     });
   }
 
-  // 4. Arabic home
+  // 5. Arabic home
   try {
     const res = await fetchUrl(`${targetUrl}/ar`);
     if (res.statusCode === 200) {
@@ -153,7 +173,107 @@ async function runVerification() {
     });
   }
 
-  // 5. Admin route protection
+  // 6. English Scholarships Directory
+  try {
+    const res = await fetchUrl(`${targetUrl}/en/scholarships`);
+    if (res.statusCode === 200) {
+      results.push({ title: 'English Scholarships Directory (/en/scholarships) returns 200 OK', passed: true });
+    } else {
+      results.push({
+        title: 'English Scholarships Directory (/en/scholarships)',
+        passed: false,
+        message: `Status: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'English Scholarships Directory (/en/scholarships)',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 7. Arabic Scholarships Directory
+  try {
+    const res = await fetchUrl(`${targetUrl}/ar/scholarships`);
+    if (res.statusCode === 200) {
+      results.push({ title: 'Arabic Scholarships Directory (/ar/scholarships) returns 200 OK', passed: true });
+    } else {
+      results.push({
+        title: 'Arabic Scholarships Directory (/ar/scholarships)',
+        passed: false,
+        message: `Status: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'Arabic Scholarships Directory (/ar/scholarships)',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 8. Scholarship Detail Page
+  try {
+    const res = await fetchUrl(`${targetUrl}/en/scholarships/chevening-scholarships-uk`);
+    if (res.statusCode === 200) {
+      results.push({ title: 'Scholarship Detail (/en/scholarships/chevening-scholarships-uk) returns 200 OK', passed: true });
+    } else {
+      results.push({
+        title: 'Scholarship Detail (/en/scholarships/chevening-scholarships-uk)',
+        passed: false,
+        message: `Status: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'Scholarship Detail Page',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 9. User Authentication Login Page
+  try {
+    const res = await fetchUrl(`${targetUrl}/en/auth/login`);
+    if (res.statusCode === 200) {
+      results.push({ title: 'User Login Page (/en/auth/login) returns 200 OK', passed: true });
+    } else {
+      results.push({
+        title: 'User Login Page (/en/auth/login)',
+        passed: false,
+        message: `Status: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'User Login Page (/en/auth/login)',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 10. Admin Login Page
+  try {
+    const res = await fetchUrl(`${targetUrl}/en/admin/login`);
+    if (res.statusCode === 200) {
+      results.push({ title: 'Admin Login Page (/en/admin/login) returns 200 OK', passed: true });
+    } else {
+      results.push({
+        title: 'Admin Login Page (/en/admin/login)',
+        passed: false,
+        message: `Status: ${res.statusCode}`,
+      });
+    }
+  } catch (err: unknown) {
+    results.push({
+      title: 'Admin Login Page (/en/admin/login)',
+      passed: false,
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  // 11. Admin Protected Route
   try {
     const res = await fetchUrl(`${targetUrl}/en/admin`, { followRedirect: false });
     if ([301, 302, 307, 308].includes(res.statusCode)) {

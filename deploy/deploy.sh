@@ -45,8 +45,11 @@ ln -sfn "$SHARED_DIR/logs" "$RELEASE_DIR/logs"
 echo "Installing dependencies (clean install)..."
 npm ci --prefer-offline --no-audit
 
-# 5. Execute Preflight Checks
-echo "Running preflight environment & code checks..."
+# 5. Execute Full Quality Gates (Type check, Lint, Test, Preflight)
+echo "Executing complete release quality gates..."
+npx tsc --noEmit
+npm run lint
+npm test
 npm run preflight
 
 # 6. Build Next.js Application
@@ -66,28 +69,37 @@ else
     pm2 start ecosystem.config.cjs --env production
 fi
 
-# 9. Post-Deployment Health Verification
-echo "Verifying service health..."
-HEALTH_URL="http://127.0.0.1:3000/api/health"
+# 9. Post-Deployment Verification (Liveness & Database Readiness)
+echo "Verifying service health & readiness..."
+APP_PORT="${PORT:-3000}"
+HEALTH_URL="http://127.0.0.1:${APP_PORT}/api/health"
+READY_URL="http://127.0.0.1:${APP_PORT}/api/ready"
 MAX_ATTEMPTS=15
 ATTEMPT=1
 SUCCESS=0
 
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
-    if curl -s -f "$HEALTH_URL" | grep -q '"status":"ok"'; then
+    HEALTH_RESP=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || true)
+    READY_RESP=$(curl -s -o /dev/null -w "%{http_code}" "$READY_URL" || true)
+
+    if [ "$HEALTH_RESP" = "200" ] && [ "$READY_RESP" = "200" ]; then
         SUCCESS=1
         break
     fi
-    echo "Health check attempt $ATTEMPT/$MAX_ATTEMPTS failed, waiting 2s..."
+    echo "Health/readiness check attempt $ATTEMPT/$MAX_ATTEMPTS (health: $HEALTH_RESP, ready: $READY_RESP), waiting 2s..."
     sleep 2
     ATTEMPT=$((ATTEMPT + 1))
 done
 
 if [ $SUCCESS -eq 1 ]; then
-    echo "✓ Liveness health check verified at $HEALTH_URL"
+    echo "✓ Both liveness (/api/health) and database readiness (/api/ready) verified on port $APP_PORT"
 else
-    echo "CRITICAL: Health check failed after $MAX_ATTEMPTS attempts! Initiating automated rollback..."
-    "$BASE_DIR/rollback.sh"
+    echo "CRITICAL: Health or readiness check failed after $MAX_ATTEMPTS attempts! Initiating automated rollback..."
+    if [ -f "$CURRENT_LINK/deploy/rollback.sh" ]; then
+        "$CURRENT_LINK/deploy/rollback.sh"
+    elif [ -f "$BASE_DIR/rollback.sh" ]; then
+        "$BASE_DIR/rollback.sh"
+    fi
     exit 1
 fi
 

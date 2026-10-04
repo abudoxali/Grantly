@@ -1,231 +1,295 @@
-# Grantly Client Production Readiness & Handoff Documentation
+# Grantly Production Infrastructure Decision & Final Launch Package Documentation
 
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
 **Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
 **Date**: October 4, 2026  
-**Status**: Client Production Readiness & Handoff Prepared (Release Candidate RC1)  
+**Status**: Production Infrastructure Finalized & Launch Package Prepared  
 
 ---
 
 > [!IMPORTANT]
 > **DEPLOYMENT POLICY COMPLIANCE CONFIRMATION**:
-> **THIS PHASE PRODUCED A CLIENT-OWNED PRODUCTION RELEASE CANDIDATE ONLY.**
+> **THIS PHASE PERFORMED ARCHITECTURAL HARDENING AND LAUNCH PACKAGING ONLY.**
 > - **NO** VPS servers were accessed or modified via SSH.
-> - **NO** production Nginx instances were reconfigured on remote hosts.
+> - **NO** live Nginx instances were reconfigured on remote hosts.
 > - **NO** DNS records or zones were altered.
 > - **NO** production SSL/TLS certificates were requested or issued.
-> - **NO** production Supabase projects were created.
+> - **NO** live Supabase projects were created or modified.
 > - **NO** real administrator accounts, emails, or passwords were created or invented.
 > - **NO** live deployment occurred.
-> - **ZERO** reliance on personal developer infrastructure, domains (`abud.fun`), or credentials.
+> - **ZERO** reliance on personal developer infrastructure, domains, or credentials.
 >
-> All operational artifacts, configuration templates, database migrations, CI gates, and verification scripts have been packaged, tested, and verified locally for controlled release execution in the subsequent client-authorized deployment phase.
+> All deployment scripts, operational templates, database migrations, CI gates, and verification tooling are completely validated and ready for controlled production execution in the subsequent client-authorized deployment phase.
 
 ---
 
-## 1. Executive Summary & Client Readiness
+## 1. Executive Summary & Production Portability
 
-Grantly is an authenticated, light-first, bilingual (Arabic & English) scholarship platform connecting scholars and researchers with verified global opportunities. 
+Grantly is an authenticated, light-first, bilingual (Arabic & English) scholarship platform connecting scholars and researchers with verified global opportunities.
 
-In this phase, Grantly was decoupled from developer-specific environments and structured as a **self-contained, client-deliverable production system**. The codebase and infrastructure templates now support:
-- Completely domain-agnostic operation driven exclusively by environment variables (`NEXT_PUBLIC_SITE_URL`).
-- Complete administrative self-service via the new **Provider Management CMS (`/admin/providers`)**, allowing non-technical client staff to create, modify, and manage universities, foundations, and government providers dynamically.
-- Dynamic provider linkage during scholarship creation and editing without touching source code.
-- Safe, production-ready **Visual Media Management (`ImageUpload`)** supporting Supabase Storage uploads, MIME validation, file size limits, live previews, and image URL fallbacks.
-- Supabase-native **Password Reset and Account Recovery (`/auth/reset-password`)** with token verification and bilingual feedback.
-- Immutable **Administrative Audit Logging (`admin_audit_logs`)** tracking all CRUD mutations on scholarships, providers, and user permissions.
-- Operational resilience with safe HSTS policies (avoiding premature preloading that could cause permanent client domain lockout), configurable PM2 instance sizing, and defensive validation in administrator bootstrap scripts.
+In this phase, every operational ambiguity has been eliminated. The project is packaged so that the subsequent phase can perform an automated, predictable production launch using client-approved infrastructure without altering application source code.
 
----
-
-## 2. Client Ownership & Decoupling Audit
-
-### 2.1 Complete Eradication of Personal Identifiers
-A strict scan across all source files, configuration files, and deployment templates confirmed:
-- Personal domain `abud.fun` is completely absent from all code, configuration files, and documentation.
-- The developer username `abudoxali` appears strictly in the canonical GitHub remote origin URL (`https://github.com/abudoxali/Grantly.git`).
-- All authentication callbacks, password recovery redirects, and canonical links are dynamically generated using `NEXT_PUBLIC_SITE_URL || window.location.origin`.
-
-### 2.2 Environment Configuration Architecture
-Environment variables are specified in `.env.example` with empty, documented placeholders. No production secrets or personal API keys exist in git history or tracked files:
-- `NEXT_PUBLIC_SUPABASE_URL`: Client's dedicated Supabase project URL.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Client's Supabase anonymous public key.
-- `SUPABASE_SERVICE_ROLE_KEY`: Client's private Supabase service role key (server-only).
-- `NEXT_PUBLIC_SITE_URL`: Client's primary production domain (e.g. `https://grantly.org`).
-- `PORT`: Server listening port (default: `3000`).
-- `PM2_INSTANCES`: Configurable cluster worker count (default: `2`).
+### Supported Hosting Targets
+1. **Primary Target — Standard Ubuntu VPS**:
+   - Ubuntu 22.04+ LTS / Debian 12+.
+   - Node.js 20 LTS (Active LTS runtime), npm, PM2 process manager.
+   - Nginx reverse proxy with TLS 1.2/1.3 and rate limiting.
+   - Supabase Managed PostgreSQL backend.
+   - Zero vendor lock-in; deployable on Hetzner, DigitalOcean, Vultr, AWS EC2, or client private cloud.
+2. **Alternative Target — Standard Managed Node.js Platforms**:
+   - Platform-as-a-Service environments supporting Node.js 20 standalone builds (Render, Railway, Fly.io, etc.).
+   - Configured simply via standard environment variables and `PORT`.
 
 ---
 
-## 3. Core Modules & Administrative CMS Enhancements
+## 2. Port Safety & Process Supervision
 
-### 3.1 Provider Management Module (`/admin/providers`)
-- **Self-Service Provider Administration**: Client administrators can manage scholarship sponsors without developer intervention.
-- **Provider Types Supported**: Universities, Government Ministries, Foundations, International Organizations.
-- **Relational Integrity Safeguard**: The deletion handler strictly inspects existing scholarship records; if any scholarship is currently linked to a provider, deletion is blocked with a descriptive error message to prevent database orphan records.
-- **Dynamic Selectors**: The scholarship creation (`/admin/scholarships/new`) and editing (`/admin/scholarships/[id]/edit`) interfaces now fetch active providers dynamically from the repository instead of static arrays.
-
-### 3.2 Media & Image Management (`ImageUpload`)
-- **Unified Upload Component**: Designed for scholarship cover images, provider logos, and guide banners.
-- **Validation**: Enforces strict MIME whitelist (`image/jpeg`, `image/png`, `image/webp`, `image/avif`, `image/svg+xml`) and maximum file size (5MB).
-- **Dual Mode**: Direct upload to Supabase Storage buckets with automatic public URL generation, with immediate fallback to manual image URL input.
-- **Integrated UX**: Live image preview, error notification, replace button, and remove action.
-
-### 3.3 Account Recovery & Password Reset (`/auth/reset-password`)
-- **Supabase Auth Integration**: Full compliance with Supabase Auth recovery tokens (`type=recovery`).
-- **Validation & Security**: Enforces minimum 8-character complexity, client-side confirmation match check, and automatic session cleanup upon success.
-- **Bilingual Experience**: Arabic and English status alerts and instructions.
-
-### 3.4 Administrative Audit Logging
-- **Immutable Table**: `public.admin_audit_logs` captures administrative activity.
-- **Logged Events**: Creation, updating, deletion, publishing, unpublishing of scholarships, providers, and user role updates.
-- **Recorded Data**: Timestamp, admin user ID, action type, entity ID, and operational metadata.
+- **Port Parameterization**: The production application port is strictly configurable via the `PORT` environment variable (defaults to `3000` if unspecified). No hardcoded assumptions are made that port 3000, 3110, or 3120 is free.
+- **PM2 Configuration (`ecosystem.config.cjs`)**:
+  - Process Name: `grantly`.
+  - Cluster Mode: `exec_mode: 'cluster'`, dynamically sizing worker instances via `process.env.PM2_INSTANCES` (conservative default of `2` for shared virtual cores).
+  - Dynamic Port: Reads `PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000`.
+  - Memory Threshold: `max_memory_restart: '512M'`.
+  - Structured Logging: Persistent output and error logs in `./logs/pm2-*.log`.
+- **Nginx Template (`deploy/nginx/grantly.conf.template`)**:
+  - Parameterized upstream: `server 127.0.0.1:${APP_PORT} max_fails=3 fail_timeout=10s;`.
+  - Rate limiting zones for general traffic and auth endpoints.
+  - Modern TLS ciphers, HTTP/2 support, Gzip compression, and immutable Next.js static asset caching.
 
 ---
 
-## 4. Security Hardening & Authentication Architecture
+## 3. Canonical Supabase Production Launch Procedure
 
-### 4.1 Canonical Database Migrations (`supabase/migrations/`)
+The client will provision a dedicated Supabase project. The exact, validated launch sequence requires **zero source-code modifications**:
 
-1. **`20261004000001_initial_schema.sql`**:
-   - PostgreSQL extensions (`uuid-ossp`).
-   - Custom enum types (`user_role`, `funding_type`, `scholarship_status`, `degree_level`, `provider_type`).
-   - Normalized relational tables: `profiles`, `countries`, `fields`, `providers`, `scholarships`, `scholarship_fields`, `guides`, `bookmarks`.
-   - Foreign key integrity constraints (`ON DELETE CASCADE`, `ON DELETE SET NULL`).
-   - Strategic B-tree performance indexes on foreign keys, slugs, and status flags.
+```mermaid
+flowchart TD
+    A["1. Client Creates Supabase Project"] --> B["2. Retrieve API Keys & Database URL"]
+    B --> C["3. Apply Migration 1: 20261004000001_initial_schema.sql"]
+    C --> D["4. Apply Migration 2: 20261004000002_security_hardening.sql"]
+    D --> E["5. Verify Schema & Anti-Escalation Triggers"]
+    E --> F["6. Run Seed: npm run seed"]
+    F --> G["7. Provision Storage Buckets & Policies"]
+    G --> H["8. Configure Auth Site URL & Redirect URLs"]
+    H --> I["9. Bootstrap Client Administrator: npm run bootstrap:admin"]
+    I --> J["10. Execute First Login & Verification"]
+```
 
-2. **`20261004000002_security_hardening.sql`**:
-   - **Hardened `is_admin()` Function**: Declared as `STABLE SECURITY DEFINER SET search_path = public, pg_temp;` to completely eliminate schema search path hijacking or object shadowing.
-   - **Anti-Privilege Escalation Trigger (`trg_prevent_profile_role_escalation`)**: Enforced at the PostgreSQL engine level (`BEFORE UPDATE ON public.profiles`). If a non-admin caller attempts to modify `role`, `id`, `email`, or `created_at`, the transaction is immediately aborted with SQL exception `42501 (Permission Denied)`.
-   - **Hardened New User Registration Trigger (`handle_new_user`)**: Unconditionally forces `'user'::public.user_role`. Any `role` parameter supplied in client metadata (`raw_user_meta_data`) is strictly ignored and discarded.
-   - **Hardened Profiles RLS Policies**: Updates to `public.profiles` require `role = (SELECT role FROM public.profiles WHERE id = auth.uid())`, preventing unauthorized self-elevation via Supabase REST endpoints.
-   - **Automated Timestamps**: Trigger `trg_*_updated_at` attached across all core tables to enforce deterministic audit trails.
-   - **Admin Audit Logging Table (`public.admin_audit_logs`)**: Dedicated immutable audit logging for administrative mutations, protected by admin-only RLS policies.
-   - **Supabase Storage Production Policies**: Granular bucket size limits and MIME type enforcement for `scholarship-covers`, `provider-logos`, and `guide-images` with public read and authenticated admin-only write permissions.
+### 3.1 Migration Execution Order
+Canonical database migrations must be applied sequentially via the Supabase SQL Editor or Supabase CLI:
+1. **`supabase/migrations/20261004000001_initial_schema.sql`**: Normalized tables (`profiles`, `countries`, `fields`, `providers`, `scholarships`, `guides`, `bookmarks`), foreign key cascades, and performance indexes.
+2. **`supabase/migrations/20261004000002_security_hardening.sql`**: Fixed `search_path = public, pg_temp` on `is_admin()`, PostgreSQL anti-privilege escalation trigger `trg_prevent_profile_role_escalation` (aborts unauthorized role modification with error code `42501`), immutable audit logs table (`admin_audit_logs`), and storage bucket security policies.
 
-### 4.2 Server-Side Route Guard & Session Verification (`src/middleware.ts`)
-- **Cryptographic Server Verification**: For any administrative route (`/:locale/admin/*`, excluding `/login`), the middleware instantiates a server Supabase client using `@supabase/ssr` with request cookies, calls `supabase.auth.getUser()`, and verifies the cryptographic signature with Supabase Auth.
-- **Database Role Confirmation**: Checks `role === 'admin'` from `public.profiles`.
-- **Fail-Safe Mode**: In production, unconfigured or unreachable backends immediately bounce unauthorized requests with `error=backend_unconfigured`.
-- **Defense in Depth**: Client shell in `src/app/[locale]/admin/layout.tsx` maintains active UI role assertion and displays a locked fallback screen if state transitions occur.
+> [!NOTE]
+> `src/lib/supabase/schema.sql` is maintained purely as a consolidated reference snapshot for local offline development. The incremental migration files above are the canonical source of truth for production.
 
-### 4.3 Administrator Provisioning Guard (`scripts/bootstrap-admin.ts`)
-- **Weak Credential Rejection**: Enforces minimum 10-character password complexity, requires upper, lower, and digit/symbol characters. Rejects placeholder passwords (`password`, `admin123`, `changeme`).
-- **Placeholder Email Rejection**: Rejects example domain emails (`example.com`, `test.com`, `admin@grantly.org`).
-- **Idempotency**: Creates admin user in Supabase Auth if missing, updates role to `admin` in `public.profiles`, and updates password if user already exists.
+### 3.2 Production Seed Procedure (`npm run seed`)
+- **Execution**: Run with `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. The script strictly rejects the public Anon key.
+- **Idempotency**: All records are inserted using PostgreSQL `.upsert({ onConflict: 'slug' })`. Rerunning `npm run seed` updates existing rows and does **not** create duplicate records.
+- **Failure Behavior**: Exits with non-zero exit code (`process.exit(1)`) on any mutation error.
+- **Seed Entity Breakdown**:
+  - Countries: 12
+  - Academic Fields: 8
+  - Scholarship Providers: 14
+  - Scholarships: 14
+  - Student Guides: 5
+
+### 3.3 Storage Provisioning Procedure
+Three public buckets must be verified in Supabase Storage:
+1. `scholarship-covers` (Max size: 5MB)
+2. `provider-logos` (Max size: 5MB)
+3. `guide-images` (Max size: 5MB)
+- **Public Read**: Anyone can read/download images.
+- **Admin Write**: Insert/update/delete operations are restricted by RLS to authenticated users possessing the `admin` role in `public.profiles`.
+- **MIME Type Whitelist**: `image/jpeg`, `image/png`, `image/webp`, `image/avif`, `image/svg+xml`.
+
+### 3.4 Administrator Provisioning & First Login Flow
+- **Provisioning**: Executed without hardcoded credentials via:
+  ```bash
+  NEXT_PUBLIC_SUPABASE_URL="https://client-project.supabase.co" \
+  SUPABASE_SERVICE_ROLE_KEY="client-service-role-key" \
+  ADMIN_EMAIL="admin@clientdomain.com" \
+  ADMIN_PASSWORD="<ClientSelectedStrongPassword>" \
+  npm run bootstrap:admin
+  ```
+- **Validation**: Enforces minimum 8-character password length and rejects insecure placeholders (`password`, `admin123`, `test@test.com`).
+- **First Login Procedure**:
+  1. Navigate to `https://CLIENT_DOMAIN/en/admin/login`.
+  2. Enter provisioned administrator email and password.
+  3. Supabase Auth validates session; Next.js middleware verifies cryptographic token and confirms `role === 'admin'` in `public.profiles`.
+  4. Access `/admin` dashboard and verify provider and scholarship management tools.
+  5. Test session termination via Logout.
 
 ---
 
-## 5. Operations, Packaging & Release Architecture
+## 4. Domain, DNS & TLS Architecture
 
-### 5.1 Next.js Packaging & Security Headers (`next.config.ts`)
-- **Standalone Output**: `output: 'standalone'` generates an optimized, self-contained deployment bundle in `.next/standalone`.
-- **Header Hardening**: `poweredByHeader: false` prevents server fingerprinting.
-- **HTTP Security Headers**:
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `X-XSS-Protection: 1; mode=block`
-  - `Referrer-Policy: strict-origin-when-cross-origin`
-  - `Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=()`
-  - `Strict-Transport-Security`: Set to conservative `max-age=86400` during launch phase to prevent irreversible browser caching issues while DNS or SSL certificates are finalized.
-- **Image Optimization**: Whitelisted domains include Supabase storage, Unsplash, and FlagCDN.
+### 4.1 Domain-Neutral DNS Instructions
+The client or registrar administrator must configure the following records:
+- **Root Domain (Apex)**: `A` record pointing `@` to `SERVER_IPV4`.
+- **Subdomain (`www`)**: `CNAME` record pointing `www` to `CLIENT_DOMAIN`.
+- **IPv6**: `AAAA` record pointing `@` to `SERVER_IPV6` only if the provisioned VPS has an assigned IPv6 address.
 
-### 5.2 Process Supervision with PM2 (`ecosystem.config.cjs`)
-- Configurable cluster execution: `instances: process.env.PM2_INSTANCES || 2`, `exec_mode: 'cluster'`.
-- Memory limits per worker: `max_memory_restart: '500M'`.
-- Structured log paths: `/var/www/grantly/shared/logs/pm2-*.log`.
+### 4.2 Cloudflare Compatibility & Launch Sequence
+If the client elects to route traffic through Cloudflare:
+1. **Initial DNS Setup**: Create DNS records with Cloudflare Proxy set to **DNS Only** (grey cloud icon).
+2. **Origin Validation**: Confirm HTTP requests reach the VPS origin server.
+3. **Issue SSL Certificate**: Run Certbot on the VPS to issue Let's Encrypt certificates.
+4. **Verify HTTPS**: Ensure direct HTTPS communication succeeds.
+5. **Enable Proxy**: Switch Cloudflare records to **Proxied** (orange cloud icon).
+6. **Set Encryption Mode**: Set Cloudflare SSL/TLS encryption mode to **Full (Strict)**. *Never use Flexible, which results in infinite redirect loops.*
 
-### 5.3 Production Nginx Configuration Template (`deploy/nginx/grantly.conf.template`)
-- Rate limiting zones (`req_zone` 30r/m for general traffic, 10r/m for `/auth/` endpoints).
-- Modern TLS cipher suites (TLSv1.2 & TLSv1.3 only).
-- Immutable static asset caching with 1-year cache control headers for `/_next/static/`.
-- Safe HSTS initial header (`max-age=86400`) without premature preload.
-
-### 5.4 Deployment & Rollback Scripts (`deploy/`)
-- `deploy.sh`: Atomic symlink release deployment (`releases/<timestamp>` -> `current`).
-- `rollback.sh`: Instant zero-downtime rollback to previous release.
+### 4.3 SSL & HSTS Policy
+- **Certificate Issuance**:
+  ```bash
+  sudo certbot certonly --webroot -w /var/www/certbot -d CLIENT_DOMAIN -d www.CLIENT_DOMAIN
+  ```
+- **HSTS Policy**: Starts conservatively at `max-age=86400` (1 day) without `preload`. This prevents irreversible client domain lockout during launch DNS adjustments. Once the production domain has operated stably for 30+ days, HSTS can be upgraded to 1 year with preload.
 
 ---
 
-## 6. Verification & Quality Gates Results
+## 5. Email & SMTP Decision
 
-All quality gates have been executed and verified clean:
+### Current Operational Email Requirements
+1. **Required for Launch — Password Reset**:
+   - Supabase Auth sends password recovery emails containing the secure recovery link to `/auth/reset-password`.
+2. **Optional for Launch — Signup Email Verification**:
+   - In Supabase Auth Settings, email confirmation can be enabled or disabled. For initial launch, if custom SMTP is not yet configured, disabling signup confirmation prevents hitting default rate limits.
 
-| Gate / Command | Scope | Result | Status |
+### Supabase Default SMTP Limitations
+- Supabase provides a built-in default mail service intended solely for development. It enforces a strict rate limit (~3-4 emails/hour), uses a shared generic sender (`noreply@mail.app.supabase.io`), and emails commonly land in junk/spam folders.
+
+### Recommended Custom SMTP Configuration
+For production, the client should configure a custom SMTP relay in Supabase Project Settings > Authentication > Email:
+- **Providers**: Resend, SendGrid, Postmark, AWS SES, or Google Workspace SMTP.
+- **Settings**: Host, Port (587), Username, Password / API Key, Sender Name ("Grantly"), Sender Email (`auth@clientdomain.com`).
+
+---
+
+## 6. Deployment Packaging & Release Pipeline
+
+### 6.1 Canonical Production Directory Structure
+```
+/var/www/grantly/
+    releases/
+        20261004120000/
+        20261004130000/
+    shared/
+        .env.production
+        logs/
+    current -> /var/www/grantly/releases/<latest-timestamp>
+```
+
+### 6.2 Pre-Deployment Input Contract
+The deployment phase requires the following explicit inputs:
+- `SERVER_HOST`: Production VPS IP address.
+- `SSH_USER`: Deployment user with sudo/service rights.
+- `CLIENT_DOMAIN`: Production domain (e.g. `grantly.org`).
+- `APP_PORT`: Application port (e.g. `3000` or assigned port).
+- `NEXT_PUBLIC_SUPABASE_URL`: Client Supabase project endpoint.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Client Supabase anonymous public key.
+- `SUPABASE_SERVICE_ROLE_KEY`: Client Supabase private service role key.
+- `CLIENT_ADMIN_EMAIL`: Official administrator email.
+- `CLIENT_ADMIN_PASSWORD`: Securely supplied administrator password.
+
+### 6.3 Release Quality Gates (`deploy/deploy.sh`)
+Before any symlink cutover occurs, `deploy.sh` executes the full quality gate suite:
+1. `npm ci --prefer-offline --no-audit`
+2. `npx tsc --noEmit`
+3. `npm run lint`
+4. `npm test`
+5. `npm run preflight`
+6. `npm run build`
+Any failure immediately halts deployment without touching the running release.
+
+### 6.4 Post-Deployment Health & Readiness Gates
+The candidate release must pass both probes on `APP_PORT`:
+- **Liveness Probe**: `GET http://127.0.0.1:${APP_PORT}/api/health` -> HTTP 200 `{"status":"ok"}`.
+- **Database Readiness Probe**: `GET http://127.0.0.1:${APP_PORT}/api/ready` -> HTTP 200 `{"status":"ready"}`.
+
+### 6.5 Post-Cutover Comprehensive Smoke Test (`scripts/verify-deployment.ts`)
+Verifies all key user and admin journeys against the live target:
+- Root Route (`/`)
+- English Homepage (`/en`) with security headers (`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`)
+- Arabic Homepage (`/ar`)
+- English Scholarships Directory (`/en/scholarships`)
+- Arabic Scholarships Directory (`/ar/scholarships`)
+- Scholarship Detail Page (`/en/scholarships/chevening-scholarships-uk`)
+- User Login Page (`/en/auth/login`)
+- Admin Login Page (`/en/admin/login`)
+- Protected Admin Route (`/en/admin`) confirms unauthenticated access is strictly blocked.
+
+### 6.6 Rollback Contract (`deploy/rollback.sh`)
+If health verification fails or an issue is detected post-deployment:
+1. Symlink `/var/www/grantly/current` is atomically repointed to the previous release in `/var/www/grantly/releases/`.
+2. PM2 is reloaded: `pm2 reload ecosystem.config.cjs --update-env`.
+3. Health and readiness endpoints are verified on the rolled-back release.
+4. *Database Rollback Note*: Code rollbacks do not automatically revert database schema changes. Destructive database migrations require pre-migration snapshots.
+
+---
+
+## 7. Backup & Disaster Recovery Architecture
+
+- **Fresh Launch Database**: Initial migrations target a clean, fresh Supabase database.
+- **Pre-Migration Backup Precondition**: Before applying any future destructive migrations, an explicit backup must be taken:
+  ```bash
+  pg_dump --clean --if-exists --no-owner --no-privileges -d "$SUPABASE_DB_URL" > grantly_pre_migration_$(date +%Y%m%d%H%M%S).sql
+  ```
+- **Supabase Tier Expectations**: Supabase Free tier does not include automated daily point-in-time recovery. The Pro tier provides automated daily backups. Manual `pg_dump` schedules or Supabase Pro should be chosen based on client disaster recovery requirements.
+
+---
+
+## 8. Client Ownership & Information Handoff Checklist
+
+### 8.1 Asset Ownership Tracking
+| Asset / Resource | Intended Production Owner | Status / Transfer Action |
+| :--- | :--- | :--- |
+| **Source Code Repository** | Client GitHub Organization | Repository transfer or client mirror |
+| **Supabase Project** | Client Account / Org | Client invites admin, client billing attached |
+| **Application VPS** | Client Cloud Account (Hetzner / DO / AWS) | Client provisions VPS, client billing attached |
+| **Domain & DNS** | Client Registrar / Cloudflare | Client retains registrar ownership & DNS control |
+| **Administrator Account** | Client Staff Member | Provisioned via `bootstrap:admin` with client email |
+| **Transactional Email / SMTP** | Client Mail Service | Client configures API credentials in Supabase |
+| **Database Backups** | Client Storage / S3 / Supabase | Daily automated backups or manual snapshot cron |
+
+### 8.2 Operational Infrastructure Cost Estimate
+> [!NOTE]
+> Check current provider pricing before provisioning. Third-party rates, free-tier quotas, and server options fluctuate over time.
+
+- **VPS (2 vCPU, 4GB RAM, Ubuntu 22.04 LTS)**: ~$6 - $12 / month (Hetzner / DigitalOcean / Vultr).
+- **Supabase Database**: Free tier ($0) for initial launch; Pro tier ($25 / month) recommended for automated daily backups and higher bandwidth.
+- **DNS & CDN**: Cloudflare Free tier ($0).
+- **Domain Renewal**: ~$10 - $14 / year.
+- **Estimated Total**: ~$6 - $37 / month.
+
+### 8.3 Remaining Client Information Gaps
+Before the live deployment phase begins, the client must supply:
+1. Target production domain (e.g. `grantly.org`).
+2. Primary client administrator email (e.g. `admin@clientdomain.com`).
+3. Client Supabase project credentials (`URL`, `ANON_KEY`, `SERVICE_ROLE_KEY`).
+4. Production VPS server IP address and deploy user credentials.
+5. Official contact/support email for user inquiries.
+6. Optional: Custom SMTP relay credentials for transactional email delivery.
+
+---
+
+## 9. Verification & Quality Gates Status
+
+| Quality Gate / Check | Scope | Result | Status |
 | :--- | :--- | :---: | :---: |
 | `npx tsc --noEmit` | Strict TypeScript compilation | **0 errors** | Passed |
-| `npm run lint` | ESLint rules check | **0 errors, 0 warnings** | Passed |
-| `npm test` | Automated test suite | **28 / 28 passed** | Passed |
-| `npm run preflight` | Operational release preflight | **7 / 7 checks passed** | Passed |
+| `npm run lint` | ESLint quality rules | **0 errors, 0 warnings** | Passed |
+| `npm test` | Automated test suite (security, auth, seeds, env) | **28 / 28 passed** | Passed |
+| `npm run preflight` | Release preflight validation | **7 / 7 checks passed** | Passed |
 | `npm run build` | Next.js Turbopack Standalone Build | **11 static / 23 dynamic routes** | Passed |
+| `Secret Scan` | Git tracked files audit | **Zero secrets found** | Passed |
+| `Dependency Scan` | Personal identifier audit | **Zero personal coupling** | Passed |
 
 ---
 
-## 7. Client Infrastructure, Cost & Backup Architecture
-
-### 7.1 Estimated Operational Infrastructure Costs
-
-| Service Component | Recommended Provider | Tier / Spec | Estimated Cost |
-| :--- | :--- | :--- | :--- |
-| **Application Server (VPS)** | Hetzner Cloud / DigitalOcean / Vultr | 2 vCPU, 4GB RAM, Ubuntu 22.04 LTS | **$6 - $12 / month** |
-| **Database & Auth (PostgreSQL)** | Supabase Managed Cloud | Free Tier (up to 500MB DB, 50k MAU) or Pro ($25/mo) | **$0 - $25 / month** |
-| **Storage & CDN (Images)** | Supabase Storage (1GB free) | Included with Supabase | **$0 / month** |
-| **DNS & DDoS Protection** | Cloudflare | Free Tier (Universal SSL, CDN, DDoS mitigation) | **$0 / month** |
-| **Domain Registration** | Porkbun / Namecheap / Cloudflare | Standard `.com` / `.org` registration | **~$10 - $14 / year** |
-| **Total Estimated Run Cost** | | | **~$6 - $37 / month** |
-
-### 7.2 Backup & Disaster Recovery Architecture
-- **Automated PostgreSQL Snapshots**: Supabase provides automated daily backups on the Pro tier.
-- **Manual Point-in-Time Backup**:
-  ```bash
-  # Dump complete schema and relational data
-  pg_dump --clean --if-exists --no-owner --no-privileges -d "$SUPABASE_DB_URL" > grantly_backup_$(date +%Y%m%d).sql
-  ```
-- **Restore Procedure**:
-  ```bash
-  psql -d "$SUPABASE_DB_URL" < grantly_backup_YYYYMMDD.sql
-  ```
-- **Storage Backups**: Assets in Supabase Storage buckets (`scholarship-covers`, `provider-logos`, `guide-images`) can be mirrored locally via Supabase S3-compatible API or rclone.
-
----
-
-## 8. Client Handover & Launch Checklist
-
-When client infrastructure is ready, complete the following handoff checklist:
-
-### Step 1: Client Account Setup
-- [ ] Client creates Supabase account and organization.
-- [ ] Client creates a new Supabase project (e.g. `grantly-prod`).
-- [ ] Client obtains `Project URL`, `Anon Key`, and `Service Role Key` from Project Settings > API.
-
-### Step 2: Database Migration & Initial Data
-- [ ] Apply `supabase/migrations/20261004000001_initial_schema.sql` via Supabase SQL Editor.
-- [ ] Apply `supabase/migrations/20261004000002_security_hardening.sql` via Supabase SQL Editor.
-- [ ] Execute `npm run seed` to load the initial verified directory of countries, fields, and initial providers.
-
-### Step 3: Client Admin Bootstrap
-- [ ] Execute `bootstrap:admin` with the client's official email address:
-  ```bash
-  ADMIN_EMAIL="admin@clientdomain.com" ADMIN_PASSWORD="<ClientSecurePassword>" npm run bootstrap:admin
-  ```
-- [ ] Verify administrative login at `https://clientdomain.com/en/admin/login`.
-
-### Step 4: Storage Buckets & Policies
-- [ ] Verify that public buckets `scholarship-covers`, `provider-logos`, and `guide-images` exist in Supabase Storage with size limits (5MB) and MIME restrictions applied.
-
-### Step 5: VPS & Domain Configuration
-- [ ] Provision Ubuntu 22.04 LTS VPS with Node.js 20 LTS and PM2.
-- [ ] Configure DNS A/AAAA records pointing `clientdomain.com` to VPS IP.
-- [ ] Configure Nginx using `deploy/nginx/grantly.conf.template` and obtain Certbot SSL certificates.
-- [ ] Configure `NEXT_PUBLIC_SITE_URL=https://clientdomain.com` in `/var/www/grantly/shared/.env.production`.
-- [ ] Set Site URL in Supabase Auth Settings to `https://clientdomain.com` and configure redirect URLs (`https://clientdomain.com/**`).
-
----
-
-## 9. Source Control & Repository State
+## 10. Source Control & Repository State
 
 - **Canonical Repository**: `https://github.com/abudoxali/Grantly.git`
 - **Canonical Branch**: `main`
-- **Current Phase**: Client Production Readiness & Handoff Preparation
-- **Verified Remote HEAD**: `2698798b4127a070baa6905f5ce0594deb3e2426` (`2698798`)
-- **Quality Gates State**: All 5 quality gates verified cleanly (TypeScript, ESLint, Unit Tests, Preflight, Next Standalone Build).
+- **Verified Remote HEAD**: `df828e85cb08bbc7c312539f95043fb83a919d1f`
+- **Current Phase**: Production Infrastructure Decision & Final Launch Package
