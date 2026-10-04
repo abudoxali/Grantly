@@ -188,5 +188,10 @@ export const en: Dictionary = {
     officialUrl: 'Official Portal URL',
     adminAccessOnly: 'Admin authorization required. Access restricted.',
     loginAsAdmin: 'Admin Authentication',
+    providers: 'Providers CMS',
+    totalProviders: 'Scholarship Providers',
+    account: 'Admin Account',
+    deleteConfirm: 'Are you sure you want to delete this item? This action cannot be undone.',
+    archive: 'Archive',
   },
 };

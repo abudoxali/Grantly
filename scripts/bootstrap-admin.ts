@@ -57,6 +57,18 @@ async function bootstrapAdmin() {
     process.exit(1);
   }
 
+  const forbiddenWeakPasswords = ['admin123456', 'password123', 'admin123', '12345678', 'password'];
+  if (forbiddenWeakPasswords.includes(adminPassword.toLowerCase())) {
+    console.error('Error: Insecure default or weak password rejected. Please choose a strong temporary password for client admin.');
+    process.exit(1);
+  }
+
+  const forbiddenDemoEmails = ['admin@example.com', 'test@test.com'];
+  if (forbiddenDemoEmails.includes(adminEmail.toLowerCase())) {
+    console.error('Error: Placeholder email rejected. Please provide the actual client administrator email.');
+    process.exit(1);
+  }
+
   console.log(`Target Admin Email: ${adminEmail}`);
   console.log(`Connecting to Supabase at: ${supabaseUrl}`);
 

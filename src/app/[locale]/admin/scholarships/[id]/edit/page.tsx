@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
-import { getScholarships, getCountries } from '@/lib/db/repository';
-import { SEED_PROVIDERS } from '@/lib/data/seed-data';
+import { getScholarships, getCountries, getProviders } from '@/lib/db/repository';
 import { ScholarshipEditor } from '@/components/admin/ScholarshipEditor';
 import { isValidLocale } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/types';
@@ -16,9 +15,10 @@ export default async function EditScholarshipPage({
   const { locale, id } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  const [{ scholarships }, countries] = await Promise.all([
+  const [{ scholarships }, countries, providers] = await Promise.all([
     getScholarships({ publishedOnly: false }, locale as Locale),
     getCountries(),
+    getProviders(),
   ]);
 
   const scholarship = scholarships.find((s) => s.id === id);
@@ -28,7 +28,7 @@ export default async function EditScholarshipPage({
     <ScholarshipEditor
       initialData={scholarship}
       countries={countries}
-      providers={SEED_PROVIDERS}
+      providers={providers}
     />
   );
 }

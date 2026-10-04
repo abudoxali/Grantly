@@ -17,6 +17,7 @@ import type {
   ScholarshipStatus,
 } from '@/lib/supabase/types';
 import { Button } from '@/components/ui/Button';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import {
   ArrowLeft,
   AlertCircle,
@@ -89,6 +90,9 @@ export function ScholarshipEditor({
   const [featured, setFeatured] = React.useState(initialData?.featured || false);
   const [published, setPublished] = React.useState(
     initialData?.published !== undefined ? initialData.published : true
+  );
+  const [coverImage, setCoverImage] = React.useState<string | null>(
+    initialData?.cover_image || null
   );
 
   const [saving, setSaving] = React.useState(false);
@@ -246,6 +250,7 @@ export function ScholarshipEditor({
           required_documents_ar,
           featured,
           published,
+          cover_image: coverImage,
         });
       } else {
         await createScholarship({
@@ -276,7 +281,7 @@ export function ScholarshipEditor({
           required_documents_ar,
           featured,
           published,
-          cover_image: null,
+          cover_image: coverImage,
           logo_image: null,
           last_verified_at: new Date().toISOString().split('T')[0],
         });
@@ -643,6 +648,28 @@ export function ScholarshipEditor({
               />
             </div>
           </div>
+        </div>
+
+        {/* Media & Visual Assets */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-2xs space-y-4">
+          <h3 className="text-sm font-bold text-slate-900 pb-2 border-b border-slate-100">
+            {isAr ? 'صورة الغلاف والوسائط' : 'Media & Cover Image'}
+          </h3>
+          <p className="text-xs text-slate-500">
+            {isAr
+              ? 'ارفع صورة غلاف للمنحة بجودة عالية تظهر في دليل المنح وبطاقات العرض.'
+              : 'Upload a high-quality cover image to appear on scholarship cards and details page.'}
+          </p>
+          <ImageUpload
+            value={coverImage}
+            onChange={(url) => {
+              setCoverImage(url);
+              markDirty();
+            }}
+            bucket="scholarship-covers"
+            label={isAr ? 'صورة الغلاف' : 'Cover Image'}
+            isArabic={isAr}
+          />
         </div>
 
         {/* Publishing & Visibility */}

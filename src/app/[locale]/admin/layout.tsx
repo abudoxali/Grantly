@@ -17,6 +17,8 @@ import {
   LogOut,
   ExternalLink,
   Lock,
+  Building2,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -90,6 +92,12 @@ export default function AdminLayout({
       exact: false,
     },
     {
+      name: t.admin.providers,
+      href: `/${locale}/admin/providers`,
+      icon: Building2,
+      exact: false,
+    },
+    {
       name: t.admin.countries,
       href: `/${locale}/admin/countries`,
       icon: Globe2,
@@ -111,6 +119,12 @@ export default function AdminLayout({
       name: t.admin.users,
       href: `/${locale}/admin/users`,
       icon: Users,
+      exact: false,
+    },
+    {
+      name: t.admin.account,
+      href: `/${locale}/account/profile`,
+      icon: UserCog,
       exact: false,
     },
   ];

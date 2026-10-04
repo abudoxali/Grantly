@@ -4,6 +4,7 @@ import type {
   Scholarship,
   Country,
   Field,
+  Provider,
   Guide,
   Bookmark,
   Profile,
@@ -24,6 +25,7 @@ class LocalDataStore {
   scholarships: Scholarship[] = [...SEED_SCHOLARSHIPS];
   countries: Country[] = [...SEED_COUNTRIES];
   fields: Field[] = [...SEED_FIELDS];
+  providers: Provider[] = [...SEED_PROVIDERS];
   guides: Guide[] = [...SEED_GUIDES];
   bookmarks: Bookmark[] = [];
   profiles: Profile[] = [
@@ -308,7 +310,9 @@ export async function createScholarship(
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     country: globalStore.countries.find((c) => c.id === data.country_id),
-    provider: SEED_PROVIDERS.find((p) => p.id === data.provider_id),
+    provider:
+      globalStore.providers.find((p) => p.id === data.provider_id) ||
+      SEED_PROVIDERS.find((p) => p.id === data.provider_id),
   };
 
   globalStore.scholarships.unshift(newScholarship);
@@ -346,6 +350,10 @@ export async function updateScholarship(
     country: updates.country_id
       ? globalStore.countries.find((c) => c.id === updates.country_id)
       : globalStore.scholarships[idx].country,
+    provider: updates.provider_id
+      ? globalStore.providers.find((p) => p.id === updates.provider_id) ||
+        SEED_PROVIDERS.find((p) => p.id === updates.provider_id)
+      : globalStore.scholarships[idx].provider,
   };
   return globalStore.scholarships[idx];
 }
@@ -549,6 +557,139 @@ export async function deleteField(id: string): Promise<boolean> {
   const initial = globalStore.fields.length;
   globalStore.fields = globalStore.fields.filter((f) => f.id !== id);
   return globalStore.fields.length < initial;
+}
+
+// ==============================================================================
+// PROVIDERS REPOSITORY (Universities, Governments, Foundations)
+// ==============================================================================
+
+export async function getProviders(): Promise<Provider[]> {
+  assertProductionConfig();
+  const supabase = createClient();
+  if (isSupabaseConfigured && supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('providers')
+        .select('*, country:countries(*)')
+        .order('name_en');
+      if (!error && data) return data as Provider[];
+    } catch {
+      // Fallback
+    }
+  }
+
+  return [...globalStore.providers];
+}
+
+export async function getProviderById(id: string): Promise<Provider | null> {
+  assertProductionConfig();
+  const providers = await getProviders();
+  return providers.find((p) => p.id === id) || null;
+}
+
+export async function createProvider(
+  data: Omit<Provider, 'id' | 'created_at' | 'updated_at'>
+): Promise<Provider> {
+  assertProductionConfig();
+  const supabase = createClient();
+  if (isSupabaseConfigured && supabase) {
+    const { data: created, error } = await supabase
+      .from('providers')
+      .insert(data as any)
+      .select('*, country:countries(*)')
+      .single();
+    if (error) throw new Error(`Database error creating provider: ${error.message}`);
+    if (created) return created as Provider;
+  }
+
+  const newProvider: Provider = {
+    ...data,
+    id: `p-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  globalStore.providers.push(newProvider);
+  return newProvider;
+}
+
+export async function updateProvider(
+  id: string,
+  updates: Partial<Provider>
+): Promise<Provider | null> {
+  assertProductionConfig();
+  const supabase = createClient();
+  if (isSupabaseConfigured && supabase) {
+    const { data: updated, error } = await (supabase as any)
+      .from('providers')
+      .update(updates)
+      .eq('id', id)
+      .select('*, country:countries(*)')
+      .single();
+    if (error) throw new Error(`Database error updating provider: ${error.message}`);
+    if (updated) return updated as Provider;
+  }
+
+  const index = globalStore.providers.findIndex((p) => p.id === id);
+  if (index !== -1) {
+    globalStore.providers[index] = {
+      ...globalStore.providers[index],
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+    return globalStore.providers[index];
+  }
+  return null;
+}
+
+export async function deleteProvider(id: string): Promise<boolean> {
+  assertProductionConfig();
+
+  // Safety check: verify no scholarships reference this provider
+  const scholarships = await getScholarships({ publishedOnly: false });
+  const hasReferences = scholarships.scholarships.some((s) => s.provider_id === id);
+  if (hasReferences) {
+    throw new Error('Cannot delete provider: active scholarships reference this provider. Unlink or reassign scholarships first.');
+  }
+
+  const supabase = createClient();
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from('providers').delete().eq('id', id);
+    if (error) throw new Error(`Database error deleting provider: ${error.message}`);
+    return true;
+  }
+
+  const initialLength = globalStore.providers.length;
+  globalStore.providers = globalStore.providers.filter((p) => p.id !== id);
+  return globalStore.providers.length < initialLength;
+}
+
+// ==============================================================================
+// ADMIN AUDIT LOG REPOSITORY
+// ==============================================================================
+
+export async function logAdminAudit(params: {
+  action: string;
+  entityType: string;
+  entityId?: string;
+  metadata?: Record<string, any>;
+  actorEmail?: string;
+  actorId?: string;
+}): Promise<void> {
+  try {
+    const supabase = createClient();
+    if (isSupabaseConfigured && supabase) {
+      await (supabase as any).from('admin_audit_logs').insert({
+        action: params.action,
+        entity_type: params.entityType,
+        entity_id: params.entityId || null,
+        metadata: params.metadata || {},
+        actor_email: params.actorEmail || null,
+        actor_id: params.actorId || null,
+      });
+    }
+  } catch {
+    // Non-blocking for audit logging
+  }
 }
 
 // ==============================================================================

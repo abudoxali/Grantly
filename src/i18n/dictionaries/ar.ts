@@ -188,5 +188,10 @@ export const ar: Dictionary = {
     officialUrl: 'رابط البوابة الرسمية',
     adminAccessOnly: 'صلاحيات المشرف مطلوبة. الوصول مقيد للمسؤولين فقط.',
     loginAsAdmin: 'تسجيل دخول الإدارة',
+    providers: 'إدارة الجهات المانحة',
+    totalProviders: 'الجهات المانحة والجامعات',
+    account: 'حساب المشرف',
+    deleteConfirm: 'هل أنت متأكد من رغبتك في حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.',
+    archive: 'أرشفة',
   },
 };

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useI18n } from '@/i18n/context';
-import { getProfiles, updateProfile } from '@/lib/db/repository';
+import { getProfiles, updateProfile, logAdminAudit } from '@/lib/db/repository';
 import type { Profile, UserRole } from '@/lib/supabase/types';
 
 export default function AdminUsersPage() {
@@ -54,6 +54,12 @@ export default function AdminUsersPage() {
     if (confirm(confirmMessage)) {
       try {
         await updateProfile(p.id, { role: nextRole });
+        await logAdminAudit({
+          action: 'ROLE_CHANGE',
+          entityType: 'PROFILE',
+          entityId: p.id,
+          metadata: { email: p.email, oldRole: p.role, newRole: nextRole },
+        });
         loadData();
       } catch (err: unknown) {
         alert(err instanceof Error ? err.message : 'Failed to update user role');

@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
-import { getCountries } from '@/lib/db/repository';
-import { SEED_PROVIDERS } from '@/lib/data/seed-data';
+import { getCountries, getProviders } from '@/lib/db/repository';
 import { ScholarshipEditor } from '@/components/admin/ScholarshipEditor';
 import { isValidLocale } from '@/i18n/get-dictionary';
 
@@ -15,12 +14,15 @@ export default async function NewScholarshipPage({
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  const countries = await getCountries();
+  const [countries, providers] = await Promise.all([
+    getCountries(),
+    getProviders(),
+  ]);
 
   return (
     <ScholarshipEditor
       countries={countries}
-      providers={SEED_PROVIDERS}
+      providers={providers}
     />
   );
 }

@@ -8,6 +8,7 @@ import {
   getScholarships,
   updateScholarship,
   deleteScholarship,
+  logAdminAudit,
 } from '@/lib/db/repository';
 import type { Scholarship } from '@/lib/supabase/types';
 import {
@@ -50,24 +51,39 @@ export default function AdminScholarshipsPage() {
   }, [locale]);
 
   const handleTogglePublish = async (sch: Scholarship) => {
-    const updated = await updateScholarship(sch.id, { published: !sch.published });
+    const nextPublished = !sch.published;
+    const updated = await updateScholarship(sch.id, { published: nextPublished });
     if (updated) {
+      await logAdminAudit({
+        action: nextPublished ? 'PUBLISH' : 'UNPUBLISH',
+        entityType: 'SCHOLARSHIP',
+        entityId: sch.id,
+        metadata: { title_en: sch.title_en, slug: sch.slug },
+      });
       setScholarships((prev) =>
-        prev.map((s) => (s.id === sch.id ? { ...s, published: !s.published } : s))
+        prev.map((s) => (s.id === sch.id ? { ...s, published: nextPublished } : s))
       );
     }
   };
 
   const handleToggleFeature = async (sch: Scholarship) => {
-    const updated = await updateScholarship(sch.id, { featured: !sch.featured });
+    const nextFeatured = !sch.featured;
+    const updated = await updateScholarship(sch.id, { featured: nextFeatured });
     if (updated) {
+      await logAdminAudit({
+        action: nextFeatured ? 'FEATURE' : 'UNFEATURE',
+        entityType: 'SCHOLARSHIP',
+        entityId: sch.id,
+        metadata: { title_en: sch.title_en, slug: sch.slug },
+      });
       setScholarships((prev) =>
-        prev.map((s) => (s.id === sch.id ? { ...s, featured: !s.featured } : s))
+        prev.map((s) => (s.id === sch.id ? { ...s, featured: nextFeatured } : s))
       );
     }
   };
 
   const handleDelete = async (id: string) => {
+    const sch = scholarships.find((s) => s.id === id);
     if (!confirm(isAr ? 'هل أنت متأكد من رغبتك في حذف هذه المنحة نهائياً؟' : 'Are you sure you want to permanently delete this scholarship?')) {
       return;
     }
@@ -76,6 +92,12 @@ export default function AdminScholarshipsPage() {
     const success = await deleteScholarship(id);
     setDeletingId(null);
     if (success) {
+      await logAdminAudit({
+        action: 'DELETE',
+        entityType: 'SCHOLARSHIP',
+        entityId: id,
+        metadata: { title_en: sch?.title_en, slug: sch?.slug },
+      });
       setScholarships((prev) => prev.filter((s) => s.id !== id));
     }
   };

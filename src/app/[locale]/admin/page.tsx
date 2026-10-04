@@ -6,18 +6,21 @@ import {
   getFields,
   getGuides,
   getProfiles,
+  getProviders,
 } from '@/lib/db/repository';
 import { isValidLocale, getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/types';
 import {
-  GraduationCap,
   Globe2,
   BookOpen,
   Users,
+  Building2,
   Plus,
   ArrowRight,
   ExternalLink,
   Edit2,
+  FileCheck2,
+  FileEdit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -39,21 +42,40 @@ export default async function AdminOverviewPage({ params }: AdminOverviewProps) 
     fields,
     guides,
     profiles,
+    providers,
   ] = await Promise.all([
     getScholarships({ publishedOnly: false }, loc),
     getCountries(),
     getFields(),
     getGuides(false),
     getProfiles(),
+    getProviders(),
   ]);
+
+  const publishedCount = scholarships.filter((s) => s.published).length;
+  const draftCount = scholarships.length - publishedCount;
 
   const stats = [
     {
-      label: t.admin.totalScholarships,
-      value: scholarships.length,
-      icon: GraduationCap,
+      label: isAr ? 'المنح المنشورة' : 'Published Scholarships',
+      value: publishedCount,
+      icon: FileCheck2,
       href: `/${locale}/admin/scholarships`,
       color: 'text-emerald-700 bg-emerald-50 border-emerald-100',
+    },
+    {
+      label: isAr ? 'مسودات المنح' : 'Draft Scholarships',
+      value: draftCount,
+      icon: FileEdit,
+      href: `/${locale}/admin/scholarships`,
+      color: 'text-amber-700 bg-amber-50 border-amber-100',
+    },
+    {
+      label: t.admin.totalProviders,
+      value: providers.length,
+      icon: Building2,
+      href: `/${locale}/admin/providers`,
+      color: 'text-teal-700 bg-teal-50 border-teal-100',
     },
     {
       label: t.admin.totalCountries,
@@ -74,7 +96,7 @@ export default async function AdminOverviewPage({ params }: AdminOverviewProps) 
       value: guides.length,
       icon: BookOpen,
       href: `/${locale}/admin/guides`,
-      color: 'text-amber-700 bg-amber-50 border-amber-100',
+      color: 'text-indigo-700 bg-indigo-50 border-indigo-100',
     },
     {
       label: t.admin.totalUsers,
@@ -115,7 +137,7 @@ export default async function AdminOverviewPage({ params }: AdminOverviewProps) 
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         {stats.map((s, i) => {
           const Icon = s.icon;
           return (

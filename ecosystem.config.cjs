@@ -7,7 +7,8 @@ module.exports = {
       name: 'grantly',
       script: '.next/standalone/server.js',
       cwd: './',
-      instances: 'max',
+      // Process count: configurable via PM2_INSTANCES env var; conservative default of 2 for shared VPS
+      instances: process.env.PM2_INSTANCES ? parseInt(process.env.PM2_INSTANCES, 10) : 2,
       exec_mode: 'cluster',
       autorestart: true,
       watch: false,

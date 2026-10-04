@@ -189,5 +189,10 @@ export interface Dictionary {
     officialUrl: string;
     adminAccessOnly: string;
     loginAsAdmin: string;
+    providers: string;
+    totalProviders: string;
+    account: string;
+    deleteConfirm: string;
+    archive: string;
   };
 }

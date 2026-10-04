@@ -59,10 +59,11 @@ const nextConfig: NextConfig = {
       },
     ];
 
-    if (isProd) {
+    // HSTS header: active in production when ENABLE_HSTS is true or default safe max-age (avoids permanent preloading before client domain lock-in)
+    if (isProd && process.env.ENABLE_HSTS === 'true') {
       securityHeaders.push({
         key: 'Strict-Transport-Security',
-        value: 'max-age=31536000; includeSubDomains; preload',
+        value: 'max-age=86400; includeSubDomains',
       });
     }
 
