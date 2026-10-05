@@ -3,7 +3,7 @@
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
 **Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
 **Date**: October 5, 2026  
-**Status**: VPS Candidate Live & Ready — Liveness & Database Readiness Verified (HTTP 200), Catalog Operational; Live Production Seed Blocked Pending Privileged Secret (User Action Required)
+**Status**: VPS Candidate Live & Hardened — Production Data Integrity Enforced (Zero Mock Fallback), Detail 404s & Empty States Verified Live against Real Supabase; Live Seed Blocked Pending Privileged Secret (User Action Required)
 
 ---
 
@@ -11,10 +11,11 @@
 
 - **Repository**: `https://github.com/abudoxali/Grantly.git`
 - **Branch**: `main`
+- **Verified Remote HEAD**: `5aadbf28f2ea670fae145697160c358fc581572f`
 - **MVP Scope**: Closed / feature-complete
 - **Supabase production project**: Created and active (`hyhtgwxmcjrwcucozbov`)
-- **VPS application candidate**: Deployed internally to `/var/www/grantly/releases/20261005124140`
-- **Current active symlink**: `/var/www/grantly/current -> /var/www/grantly/releases/20261005124140`
+- **VPS application candidate**: Deployed internally to `/var/www/grantly/releases/20261005134653`
+- **Current active symlink**: `/var/www/grantly/current -> /var/www/grantly/releases/20261005134653`
 - **Secrets committed**: None
 
 ---
@@ -170,41 +171,56 @@ Credentials must be supplied through secure runtime environment variables and mu
   /var/www/grantly/
   ├── releases/
   │   ├── 20261005090013/
-  │   └── 20261005124140/
+  │   ├── 20261005124140/
+  │   └── 20261005134653/
   ├── shared/
   │   ├── .env.production (chmod 600, restricted)
   │   └── logs/
-  └── current -> /var/www/grantly/releases/20261005124140
+  └── current -> /var/www/grantly/releases/20261005134653
   ```
-- **VPS Build & Quality Gates Execution (Release `20261005124140`)**:
-  - `npm ci`: PASSED (413 packages installed cleanly).
+- **Production Data Integrity Hardening & Silent Fallback Elimination**:
+  - **Bug Reproduction**: On release `20261005124140`, requesting `GET /en/scholarships/chevening-scholarships-uk` returned HTTP 200 rendering local development mock data (`SEED_SCHOLARSHIPS` content: Chevening, Gates Cambridge, and Fulbright) even though the live Supabase database had 0 scholarships.
+  - **Root Cause**:
+    1. `src/lib/db/repository.ts` contained `catch` blocks and fall-through branches that defaulted to `LocalDataStore` (`globalStore`) whenever a database query failed or returned no row.
+    2. In PostgreSQL, migration `20261004224937_move_admin_helper_private.sql` created policy `CREATE POLICY "Public can read published scholarships" ON public.scholarships FOR SELECT USING (published = true OR private.is_admin())` while revoking `private.is_admin()` from `anon`. Consequently, anonymous public queries received PostgreSQL error `42501 permission denied for function is_admin`. In the prior build, this error was swallowed, triggering the silent fallback to mock seed data in production.
+  - **Fix Implemented**:
+    1. Audited all repository methods in `src/lib/db/repository.ts` (`getScholarships`, `getScholarshipBySlug`, `getCountries`, `getCountryBySlug`, `getFields`, `getFieldBySlug`, `getProviders`, `getProviderById`, `getGuides`, `getGuideBySlug`, `getBookmarks`, `getProfiles`, `getProfile`, and write operations).
+    2. Enforced strict fail-closed behavior: in production (`isProduction()`), mock fallback to `LocalDataStore` / `SEED_*` is completely bypassed.
+    3. Empty database queries return clean empty collections (`{ scholarships: [], total: 0 }`, `[]`).
+    4. Not-found slugs return `null`, allowing Next.js server components to trigger `notFound()` and render authentic HTTP 404 pages.
+    5. Handled PostgreSQL 42501 on public anonymous catalog reads without crashing or falling back to mock fixtures.
+    6. Created migration `supabase/migrations/20261005140000_grant_anon_execute_admin_helper.sql` to grant execute on `private.is_admin()` to `anon` when privileged credentials are supplied.
+- **VPS Build & Quality Gates Execution (Release `20261005134653`)**:
+  - `npm ci`: PASSED (413 packages installed cleanly in 46s).
   - `npm run preflight`: PASSED (7/7 checks).
   - `npx tsc --noEmit`: PASSED (0 errors).
   - `npm run lint`: PASSED (0 errors, 0 warnings).
-  - `npm test`: PASSED (28/28 tests passed).
+  - `npm test`: PASSED (44/44 tests passed, including 16 regression assertions).
   - `npm run seed -- --dry-run`: PASSED (data integrity validated).
   - `npm run build`: PASSED (Turbopack standalone build, static & dynamic routes compiled with real publishable key).
   - Standalone Asset Packaging: Packaged `server.js`, `public/`, and `.next/static/`.
 - **PM2 Candidate State**:
-  - Process Name: `grantly` (Cluster mode, 2 instances, PIDs 157960 & 157967).
-  - Status: `online`, 0 restarts, stable memory (~120MB per instance).
+  - Process Name: `grantly` (Cluster mode, 2 instances, PIDs 162718 & 162725).
+  - Status: `online`, 0 restarts, stable memory (~80MB per instance).
+  - Working Directory: `/var/www/grantly/releases/20261005134653/.next/standalone` (verified via `/proc/<pid>/cwd`).
   - Port: Listening on `127.0.0.1:3300` (shielded by UFW; port 3300 not exposed to public internet).
 - **Health & Readiness Endpoints**:
   - `GET /api/health`: **HTTP 200 OK** (`{"status":"ok","service":"grantly","version":"0.1.0","environment":"production"}`). Security headers verified.
   - `GET /api/ready`: **HTTP 200 OK** (`{"status":"ready","service":"grantly","database":"connected","environment":"production"}`). Supabase database connectivity verified live.
-- **Route Smoke Tests on Internal Port**:
+- **Route Smoke Tests on Internal Port (Live Proofs)**:
   - `/` -> HTTP 307 (redirects to `/en`).
-  - `/en` -> HTTP 200 OK.
+  - `/en` -> HTTP 200 OK (renders clean empty state with stats: 0 scholarships, 0 countries).
   - `/ar` -> HTTP 200 OK.
-  - `/en/scholarships` -> HTTP 200 OK.
+  - `/en/scholarships` -> HTTP 200 OK (`initialScholarships: []`, renders clean empty state UI with zero mock data).
   - `/ar/scholarships` -> HTTP 200 OK.
-  - `/en/countries` -> HTTP 200 OK.
+  - `/en/scholarships/chevening-scholarships-uk` -> **HTTP 404** (returns genuine "Scholarship Not Found" 404 page; mock seed Chevening completely eliminated).
+  - `/en/guides/how-to-win-chevening-scholarship` -> **HTTP 404** (returns genuine 404 page; mock seed guide completely eliminated).
+  - `/en/countries` -> HTTP 200 OK (`[]`, empty destination grid).
   - `/ar/countries` -> HTTP 200 OK.
-  - `/en/fields` -> HTTP 200 OK.
+  - `/en/fields` -> HTTP 200 OK (`[]`, empty fields grid).
   - `/ar/fields` -> HTTP 200 OK.
-  - `/en/guides` -> HTTP 200 OK.
+  - `/en/guides` -> HTTP 200 OK (`[]`, empty guides grid).
   - `/ar/guides` -> HTTP 200 OK.
-  - `/en/scholarships/chevening-scholarships-uk` -> HTTP 200 OK.
   - `/en/auth/login` -> HTTP 200 OK.
   - `/ar/auth/login` -> HTTP 200 OK.
   - `/en/auth/register` -> HTTP 200 OK.
@@ -213,7 +229,6 @@ Credentials must be supplied through secure runtime environment variables and mu
   - `/ar/auth/forgot-password` -> HTTP 200 OK.
   - `/en/admin` -> HTTP 307 (redirects to `/en/admin/login`, unauthenticated access blocked).
   - `/ar/admin` -> HTTP 307 (redirects to `/ar/admin/login`, unauthenticated access blocked).
-  - **Catalog Smoke Result**: All public catalog routes render without backend configuration errors (HTTP 500 errors completely eliminated).
 - **Nginx Reverse Proxy State**:
   - Prepared disabled template with port 3300: `/etc/nginx/sites-available/grantly.conf.disabled`.
   - Not enabled in `sites-enabled/`; Nginx was **NOT** reloaded; public traffic was **NOT** cut over.
@@ -230,14 +245,14 @@ Runtime compatibility and package lockfile synchronization have been hardened:
 
 - Standardized Node.js runtime to Node 22 LTS across `.github/workflows/ci.yml` (`node-version: '22'`), `package.json` (`"node": ">=22.0.0"`), `.nvmrc` (`22.14.0`), and `scripts/preflight.ts` (`>= 22.0.0`).
 - Synchronized `package-lock.json` with explicit `@emnapi/core` and `@emnapi/runtime` packages to ensure deterministic `npm ci` execution on both Linux (Ubuntu CI runners) and Windows.
-- Local verification results:
+- Local & VPS verification results:
   - **Preflight check**: All 7 checks passed (`npm run preflight`).
   - **TypeScript**: Clean compilation with zero errors (`npx tsc --noEmit`).
   - **ESLint**: Clean with zero errors or warnings (`npm run lint`).
-  - **Automated test suite**: 28 passed, 0 failed across migrations, auth/guard audits, seed integrity, environment validation, and security headers (`npm test`).
+  - **Automated test suite**: 44 passed, 0 failed across migrations, auth/guard audits, seed integrity, environment validation, security headers, and production Supabase repository fallback regression tests (`npm test`).
   - **Seed data dry run**: Validated 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides (`npx tsx scripts/seed.ts --dry-run`).
   - **Production build**: Compiled cleanly with Turbopack standalone output verified at `.next/standalone/server.js` (`npm run build`).
-- **GitHub Actions CI Quality Gate**: 100% PASS (Runs `37271259748`, `37271406823`, and `37286890720`, executed on `ubuntu-latest`, all jobs and verification steps green).
+- **GitHub Actions CI Quality Gate**: 100% PASS (Run `37305111753` on commit `5aadbf2`, executed on `ubuntu-latest`, all jobs and verification steps green).
 
 ---
 
@@ -246,9 +261,10 @@ Runtime compatibility and package lockfile synchronization have been hardened:
 - **MVP feature scope**: 100%
 - **Production Supabase schema/security/storage**: ~95%
 - **Production Supabase public runtime connection**: 100% (/api/ready = HTTP 200 OK, database = connected)
+- **Production Data Integrity & Zero Mock Fallback**: 100% (Detail routes return genuine 404, catalog renders clean empty states)
 - **Repository & CI / Runtime hardening**: 100%
-- **VPS Isolated Deployment & PM2 Candidate**: 100% (Release `20261005124140` active on port 3300)
-- **Production catalog seed**: Pending privileged server-side credential
+- **VPS Isolated Deployment & PM2 Candidate**: 100% (Release `20261005134653` active on port 3300)
+- **Production catalog seed**: Pending privileged server-side credential (`SUPABASE_SERVICE_ROLE_KEY`)
 - **Production Auth URL configuration**: Pending final domain
 - **Production admin**: Pending client credentials
 - **Production SMTP**: Pending client decision/credentials
@@ -259,7 +275,7 @@ Runtime compatibility and package lockfile synchronization have been hardened:
 
 ## 10. Remaining Blockers
 
-1. Supply client-approved privileged secret (`SUPABASE_SERVICE_ROLE_KEY`) for one-time production database seed execution (`npm run seed`).
+1. Supply client-approved privileged secret (`SUPABASE_SERVICE_ROLE_KEY`) for one-time production database seed execution (`npm run seed`) and RLS helper anon execution migration.
 2. Provide the official client domain (e.g. `grantly.org`).
 3. Configure Supabase Auth Site URL and redirect URLs for that client domain.
 4. Provide client administrator credentials (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) and execute `npm run bootstrap:admin`.
