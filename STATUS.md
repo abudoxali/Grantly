@@ -3,7 +3,7 @@
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
 **Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
 **Date**: October 5, 2026  
-**Status**: VPS Integration & PM2 Candidate Deployed — Liveness Verified, Readiness & Catalog Seed Blocked Pending Server Credentials & Domain
+**Status**: VPS Candidate Live — Liveness, PM2 & Storage Verified; Readiness & Live Seed Blocked Pending Supabase Keys (User Action Required)
 
 ---
 
@@ -26,8 +26,9 @@
 - **Status**: `ACTIVE_HEALTHY`
 - **Project URL**: `https://hyhtgwxmcjrwcucozbov.supabase.co`
 - **Database**: PostgreSQL 17
-- **Publishable client key**: Available from Supabase; value intentionally omitted from this file
-- **Secret/service-role key**: Never stored in Git or STATUS.md
+- **Publishable client key (`NEXT_PUBLIC_SUPABASE_ANON_KEY`)**: NOT CONFIGURED (Authentication lookup attempted across CLI/project tooling; user-provided credential required)
+- **Secret/service-role key (`SUPABASE_SERVICE_ROLE_KEY`)**: NOT CONFIGURED (`SUPABASE SERVER SECRET = USER ACTION REQUIRED`)
+- **Secrets exposed**: NO (neither in Git, logs, client bundles, nor documentation)
 
 ### Applied production migrations
 
@@ -87,6 +88,7 @@ Production Storage buckets exist:
 | `guide-images` | Yes | Admin only | 5 MB | JPEG, PNG, WebP, AVIF |
 
 Storage RLS policies are installed for public reads and admin-only insert/update/delete operations.
+Live reachability confirmed via HTTP against the Supabase storage endpoint from the VPS for all 3 buckets (`scholarship-covers`, `provider-logos`, `guide-images`), returning `404 NoSuchKey` (confirming buckets exist, are public, and are presently empty).
 
 ---
 
@@ -108,9 +110,16 @@ The original seed fixtures use readable IDs such as `c-uk`, `p-fcdo`, and `sch-0
 
 ### Current live data state
 
-- **Seed Status**: BLOCKED — server-side Supabase secret (`SUPABASE_SERVICE_ROLE_KEY`) is not available in the environment.
-- **Real Database Row Count**: 0. Core content tables are currently empty.
-- **Dry-run validation on VPS**: PASSED cleanly (`npm run seed -- --dry-run`), validating 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides.
+- **Seed Status**: BLOCKED — server-side Supabase secret (`SUPABASE_SERVICE_ROLE_KEY`) is not available in the environment (`SUPABASE SERVER SECRET = USER ACTION REQUIRED`).
+- **Real Database Row Counts**:
+  - `countries`: 0
+  - `fields`: 0
+  - `providers`: 0
+  - `scholarships`: 0
+  - `guides`: 0
+  - `scholarship_fields`: 0
+- **Dry-run validation on VPS**: PASSED cleanly (`npm run seed -- --dry-run`), validating 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides. Slugs and relational foreign-key integrity confirmed.
+- **Live Seed Execution**: Pending privileged server secret credential.
 
 ---
 
@@ -183,9 +192,12 @@ Credentials must be supplied through secure runtime environment variables and mu
 - **Route Smoke Tests on Internal Port**:
   - `/` -> HTTP 307 (redirects to `/en`).
   - `/en/auth/login` -> HTTP 200 OK.
+  - `/ar/auth/login` -> HTTP 200 OK.
+  - `/en/auth/register` -> HTTP 200 OK.
+  - `/en/auth/forgot-password` -> HTTP 200 OK.
   - `/en/admin` -> HTTP 307 (redirects to `/en/admin/login?error=backend_unconfigured`).
   - `/ar/admin` -> HTTP 307 (redirects to `/ar/admin/login?error=backend_unconfigured`).
-  - Public catalog routes (`/en`, `/ar`, `/en/scholarships`, etc.) -> HTTP 500 (designed security failure: production mode refuses to render fallback mock data when Supabase credentials are missing).
+  - Public catalog routes (`/en`, `/ar`, `/en/scholarships`, `/ar/scholarships`, `/en/countries`, `/ar/countries`, `/en/fields`, `/ar/fields`, `/en/guides`, `/ar/guides`) -> HTTP 500 (safe production error: production mode intentionally refuses to fall back to local mock data when Supabase connection is unconfigured).
 - **Nginx Reverse Proxy State**:
   - Prepared disabled template with port 3300: `/etc/nginx/sites-available/grantly.conf.disabled`.
   - Not enabled in `sites-enabled/`; Nginx was **NOT** reloaded; public traffic was **NOT** cut over.

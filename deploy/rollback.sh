@@ -40,7 +40,7 @@ pm2 reload ecosystem.config.cjs --update-env
 
 # Verify previous release health and database readiness
 echo "Verifying health and readiness of rolled-back release..."
-APP_PORT="${PORT:-3000}"
+APP_PORT="${PORT:-3300}"
 sleep 2
 
 HEALTH_RESP=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${APP_PORT}/api/health" || true)
