@@ -37,9 +37,9 @@ cp -R . "$RELEASE_DIR"
 
 cd "$RELEASE_DIR"
 
-# 3. Symlink Shared Environment & Logs
+# 3. Symlink Shared Environment
 ln -sfn "$SHARED_DIR/.env.production" "$RELEASE_DIR/.env.local"
-ln -sfn "$SHARED_DIR/logs" "$RELEASE_DIR/logs"
+mkdir -p "$RELEASE_DIR/logs"
 
 # 4. Install Dependencies
 echo "Installing dependencies (clean install)..."
@@ -56,6 +56,15 @@ npm run preflight
 echo "Building Next.js application..."
 npm run build
 
+# Package required static assets into standalone output
+echo "Packaging standalone static assets..."
+cp -r public .next/standalone/
+cp -r .next/static .next/standalone/.next/
+
+# Link shared logs after build (prevents Turbopack root-escape panic during compilation)
+rm -rf "$RELEASE_DIR/logs"
+ln -sfn "$SHARED_DIR/logs" "$RELEASE_DIR/logs"
+
 # 7. Atomic Symlink Switch
 echo "Switching current release symlink..."
 ln -sfn "$RELEASE_DIR" "$CURRENT_LINK"
@@ -71,7 +80,7 @@ fi
 
 # 9. Post-Deployment Verification (Liveness & Database Readiness)
 echo "Verifying service health & readiness..."
-APP_PORT="${PORT:-3000}"
+APP_PORT="${PORT:-3300}"
 HEALTH_URL="http://127.0.0.1:${APP_PORT}/api/health"
 READY_URL="http://127.0.0.1:${APP_PORT}/api/ready"
 MAX_ATTEMPTS=15

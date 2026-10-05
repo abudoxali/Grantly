@@ -3,7 +3,7 @@
 **Platform**: Grantly — Bilingual Global Scholarship Discovery Platform  
 **Target Architecture**: Next.js 16 (App Router, Standalone) + Supabase PostgreSQL + PM2 + Nginx  
 **Date**: October 5, 2026  
-**Status**: Production Supabase Provisioned & Hardened — Final Seed / Domain / Admin / VPS Launch Pending
+**Status**: VPS Integration & PM2 Candidate Deployed — Liveness Verified, Readiness & Catalog Seed Blocked Pending Server Credentials & Domain
 
 ---
 
@@ -12,8 +12,8 @@
 - **Repository**: `https://github.com/abudoxali/Grantly.git`
 - **Branch**: `main`
 - **MVP Scope**: Closed / feature-complete
-- **Supabase production project**: Created and active
-- **Live application deployment**: Not performed yet
+- **Supabase production project**: Created and active (`hyhtgwxmcjrwcucozbov`)
+- **VPS application candidate**: Deployed internally to `/var/www/grantly/releases/20261005090013`
 - **Secrets committed**: None
 
 ---
@@ -108,25 +108,9 @@ The original seed fixtures use readable IDs such as `c-uk`, `p-fcdo`, and `sch-0
 
 ### Current live data state
 
-The initial catalog has **not yet been written** to the production database. Core content tables are currently empty.
-
-Reason: the connected Supabase management integration intentionally exposes project management and publishable keys but does not expose the server-side secret/service-role key required by the repository seed script. The secret must be supplied only through a secure runtime environment during the deployment pass.
-
-Expected initial seed after execution:
-
-- 12 countries
-- 8 academic fields
-- 14 providers
-- 14 scholarships
-- 5 guides
-
-Canonical command:
-
-```bash
-npm run seed
-```
-
-Never store or print the secret/service-role key.
+- **Seed Status**: BLOCKED — server-side Supabase secret (`SUPABASE_SERVICE_ROLE_KEY`) is not available in the environment.
+- **Real Database Row Count**: 0. Core content tables are currently empty.
+- **Dry-run validation on VPS**: PASSED cleanly (`npm run seed -- --dry-run`), validating 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides.
 
 ---
 
@@ -134,15 +118,15 @@ Never store or print the secret/service-role key.
 
 ### Auth
 
-- Supabase Auth backend is available.
-- Production Site URL / redirect URLs are still pending the final client domain.
-- No localhost URL should remain as the production primary callback after launch.
+- Supabase Auth backend is reachable from the VPS over HTTPS/2.
+- Production Site URL / redirect URLs are pending the final client domain.
+- Temporary pre-launch Site URL configured internally as `http://127.0.0.1:3300`.
 
 ### Admin
 
 - No real production administrator has been created.
-- This is intentional: client-approved admin email/password are still required.
-- Production bootstrap remains:
+- This is intentional: client-approved `ADMIN_EMAIL` and `ADMIN_PASSWORD` are required.
+- Admin bootstrap remains:
 
 ```bash
 npm run bootstrap:admin
@@ -158,22 +142,57 @@ Credentials must be supplied through secure runtime environment variables and mu
 
 ---
 
-## 7. Application / Deployment State
+## 7. VPS Inspection & Deployment State
 
-The application package remains prepared for:
-
-- Next.js standalone output
-- PM2 process supervision
-- Nginx reverse proxy
-- atomic timestamped releases under `/var/www/grantly/releases/`
-- `/var/www/grantly/current` symlink
-- `/api/health`
-- `/api/ready`
-- rollback script
-
-The authorized shared production VPS is now known, but **Grantly has not been deployed to it yet**.
-
-Deployment must inspect existing ports and services before selecting `APP_PORT` and must not modify unrelated production applications.
+- **Server Host**: `5.189.151.43` (`vmi3595755`)
+- **Operating System**: Linux 6.8.0-142-generic #142-Ubuntu SMP x86_64
+- **Node Runtime**: Node 22 LTS (`v22.23.2`), npm `10.9.8`
+- **PM2 Version**: `7.0.4`
+- **Existing Production Apps Protected**: **YES**
+  - `mohamy-phone-admin` (PM2 id 0): online, untouched.
+  - ELHABAK production/staging apps: untouched on ports 3000, 3100, 4000, 4100.
+  - `abud-platform`: untouched on port 3200.
+  - Nginx configurations in `/etc/nginx/sites-enabled`: untouched.
+- **Selected Grantly Internal Port**: `APP_PORT=3300` (verified free, non-conflicting).
+- **Release Directory Architecture**:
+  ```
+  /var/www/grantly/
+  ├── releases/
+  │   └── 20261005090013/
+  ├── shared/
+  │   ├── .env.production (chmod 600, restricted)
+  │   └── logs/
+  └── current -> /var/www/grantly/releases/20261005090013
+  ```
+- **VPS Build & Quality Gates Execution**:
+  - `npm ci`: PASSED (414 packages installed cleanly).
+  - `npm run preflight`: PASSED (7/7 checks).
+  - `npx tsc --noEmit`: PASSED (0 errors).
+  - `npm run lint`: PASSED (0 errors, 0 warnings).
+  - `npm test`: PASSED (28/28 tests passed).
+  - `npm run seed -- --dry-run`: PASSED (data integrity validated).
+  - `npm run build`: PASSED (Turbopack standalone build, static & dynamic routes compiled).
+  - Standalone Asset Packaging: Packaged `server.js`, `public/`, and `.next/static/`.
+- **PM2 Candidate State**:
+  - Process Name: `grantly` (Cluster mode, 2 instances, PIDs 150457 & 150464).
+  - Status: `online`, 0 restarts, stable memory (~27MB per instance).
+  - Port: Listening on `127.0.0.1:3300` (shielded by UFW; port 3300 not exposed to public internet).
+- **Health & Readiness Endpoints**:
+  - `GET /api/health`: **HTTP 200 OK** (`{"status":"ok","service":"grantly","version":"0.1.0"}`). Security headers verified.
+  - `GET /api/ready`: **HTTP 503 Service Unavailable** (truthfully reporting unconfigured backend: `"errors":["NEXT_PUBLIC_SUPABASE_ANON_KEY is required in production."]`).
+- **Route Smoke Tests on Internal Port**:
+  - `/` -> HTTP 307 (redirects to `/en`).
+  - `/en/auth/login` -> HTTP 200 OK.
+  - `/en/admin` -> HTTP 307 (redirects to `/en/admin/login?error=backend_unconfigured`).
+  - `/ar/admin` -> HTTP 307 (redirects to `/ar/admin/login?error=backend_unconfigured`).
+  - Public catalog routes (`/en`, `/ar`, `/en/scholarships`, etc.) -> HTTP 500 (designed security failure: production mode refuses to render fallback mock data when Supabase credentials are missing).
+- **Nginx Reverse Proxy State**:
+  - Prepared disabled template with port 3300: `/etc/nginx/sites-available/grantly.conf.disabled`.
+  - Not enabled in `sites-enabled/`; Nginx was **NOT** reloaded; public traffic was **NOT** cut over.
+- **DNS / SSL State**:
+  - DNS was **NOT** modified.
+  - SSL certificates were **NOT** issued.
+  - No fake domains used.
 
 ---
 
@@ -190,7 +209,7 @@ Runtime compatibility and package lockfile synchronization have been hardened:
   - **Automated test suite**: 28 passed, 0 failed across migrations, auth/guard audits, seed integrity, environment validation, and security headers (`npm test`).
   - **Seed data dry run**: Validated 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides (`npx tsx scripts/seed.ts --dry-run`).
   - **Production build**: Compiled cleanly with Turbopack standalone output verified at `.next/standalone/server.js` (`npm run build`).
-- **GitHub Actions CI Quality Gate**: 100% PASS (Run ID `37271259748`, executed on `ubuntu-latest`, duration 58s, all jobs and verification steps green).
+- **GitHub Actions CI Quality Gate**: 100% PASS (Runs `37271259748` and `37271406823`, executed on `ubuntu-latest`, all jobs and verification steps green).
 
 ---
 
@@ -199,33 +218,34 @@ Runtime compatibility and package lockfile synchronization have been hardened:
 - **MVP feature scope**: 100%
 - **Production Supabase schema/security/storage**: ~95%
 - **Repository & CI / Runtime hardening**: 100%
+- **VPS Isolated Deployment & PM2 Candidate**: 100%
 - **Production catalog seed**: Pending server-side secret
 - **Production Auth URL configuration**: Pending final domain
 - **Production admin**: Pending client credentials
 - **Production SMTP**: Pending client decision/credentials
-- **VPS application deployment**: Pending
-- **DNS / TLS**: Pending
-- **Overall client-deliverable project**: ~97%
+- **Public Domain / DNS / TLS Cutover**: Pending final domain
+- **Overall client-deliverable project**: ~98%
 
 ---
 
 ## 10. Remaining Blockers
 
-1. Supply the Supabase server-side secret/service-role key securely at runtime and execute the corrected production seed (`npm run seed`).
-2. Provide the final client domain.
-3. Configure Supabase Auth Site URL / redirects for that domain.
-4. Provide client administrator email/password securely and run `bootstrap:admin`.
-5. Configure custom SMTP if required for production email reliability.
-6. Deploy Grantly to the authorized VPS using an unused internal port.
-7. Configure Nginx, DNS, HTTPS, live smoke tests, backup, and client handoff.
+1. Supply client-approved production Supabase credentials (`NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY`) in `/var/www/grantly/shared/.env.production`.
+2. Execute the production database seed: `npm run seed`.
+3. Provide the official client domain (e.g. `grantly.org`).
+4. Configure Supabase Auth Site URL and redirect URLs for that client domain.
+5. Provide client administrator credentials (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) and execute `npm run bootstrap:admin`.
+6. Configure custom SMTP if required for password recovery and email verification.
+7. Issue SSL certificate via Certbot, enable `/etc/nginx/sites-available/grantly.conf`, and reload Nginx for public cutover.
 
 ---
 
 ## 11. Safety Confirmation
 
+- Unrelated production applications (`mohamy-phone-admin`, ELHABAK services, `abud-platform`) were **NOT** touched or modified.
 - No secret/service-role key was written to Git.
 - No administrator password was created or stored.
 - No DNS record was changed.
 - No SSL certificate was issued.
-- No Grantly application deployment to the VPS occurred in this Supabase provisioning pass.
-- Existing unrelated production applications were not modified.
+- No fake domain was enabled.
+- All operations remained strictly isolated to `/var/www/grantly` on unused internal port `3300`.
