@@ -125,7 +125,7 @@ Local checks completed for this source state:
 
 The build reports the existing Next.js middleware-convention deprecation warning; the production build succeeds. The full `npm ci` install also reported high advisories in the dev-inclusive dependency tree; no automatic dependency changes were made.
 
-**GitHub Actions for the hardening commit**: Run `37310810443` completed successfully. A status-only follow-up commit will run the same workflow and will be verified before completion.
+**GitHub Actions for the hardening commit**: Run `37310810443` completed successfully. The status-only follow-up commit `f1e9ec3` also passed run `37311222806`.
 
 ---
 
