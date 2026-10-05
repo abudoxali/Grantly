@@ -22,11 +22,11 @@ function check(title: string, fn: () => boolean | string | void) {
 }
 
 // 1. Node.js version
-check('Node.js version >= 20.0.0', () => {
+check('Node.js version >= 22.0.0', () => {
   const version = process.versions.node;
   const major = parseInt(version.split('.')[0], 10);
-  if (major < 20) {
-    return `Detected Node.js v${version}. Requires Node.js >= 20.0.0.`;
+  if (major < 22) {
+    return `Detected Node.js v${version}. Requires Node.js >= 22.0.0.`;
   }
   return true;
 });

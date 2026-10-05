@@ -14,7 +14,7 @@
     "seed": "tsx scripts/seed.ts"
   },
   "engines": {
-    "node": ">=20.18.0"
+    "node": ">=22.0.0"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -28,8 +28,10 @@
     "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

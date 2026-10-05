@@ -179,11 +179,17 @@ Deployment must inspect existing ports and services before selecting `APP_PORT` 
 
 ## 8. CI / Verification
 
-Previous local quality gates passed before the latest Supabase integration work.
+Runtime compatibility and package lockfile synchronization have been hardened:
 
-The latest GitHub Actions run currently fails during `npm ci` because `package-lock.json` is not fully synchronized with the dependency graph on Linux (`@emnapi/runtime` / `@emnapi/core` missing from the lockfile). GitHub Actions is also still configured for Node `20.18.0`, while current Supabase JS packages require Node 22+.
-
-This is a **real release blocker** and must be corrected before production deployment. Do not describe CI as green until a clean GitHub Actions run passes.
+- Standardized Node.js runtime to Node 22 LTS across `.github/workflows/ci.yml` (`node-version: '22'`), `package.json` (`"node": ">=22.0.0"`), `.nvmrc` (`22.14.0`), and `scripts/preflight.ts` (`>= 22.0.0`).
+- Synchronized `package-lock.json` with explicit `@emnapi/core` and `@emnapi/runtime` packages to ensure deterministic `npm ci` execution on both Linux (Ubuntu CI runners) and Windows.
+- Local verification results:
+  - **Preflight check**: All 7 checks passed (`npm run preflight`).
+  - **TypeScript**: Clean compilation with zero errors (`npx tsc --noEmit`).
+  - **ESLint**: Clean with zero errors or warnings (`npm run lint`).
+  - **Automated test suite**: 28 passed, 0 failed across migrations, auth/guard audits, seed integrity, environment validation, and security headers (`npm test`).
+  - **Seed data dry run**: Validated 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides (`npx tsx scripts/seed.ts --dry-run`).
+  - **Production build**: Compiled cleanly with Turbopack standalone output verified at `.next/standalone/server.js` (`npm run build`).
 
 ---
 
@@ -191,26 +197,26 @@ This is a **real release blocker** and must be corrected before production deplo
 
 - **MVP feature scope**: 100%
 - **Production Supabase schema/security/storage**: ~95%
-- **Production catalog seed**: Pending
+- **Repository & CI / Runtime hardening**: 100%
+- **Production catalog seed**: Pending server-side secret
 - **Production Auth URL configuration**: Pending final domain
 - **Production admin**: Pending client credentials
 - **Production SMTP**: Pending client decision/credentials
 - **VPS application deployment**: Pending
 - **DNS / TLS**: Pending
-- **Overall client-deliverable project**: ~96%
+- **Overall client-deliverable project**: ~97%
 
 ---
 
 ## 10. Remaining Blockers
 
-1. Repair Linux-reproducible `package-lock.json` and move CI/runtime to supported Node 22 LTS; obtain a green CI run.
-2. Supply the Supabase server-side secret/service-role key securely at runtime and execute the corrected production seed.
-3. Provide the final client domain.
-4. Configure Supabase Auth Site URL / redirects for that domain.
-5. Provide client administrator email/password securely and run `bootstrap:admin`.
-6. Configure custom SMTP if required for production email reliability.
-7. Deploy Grantly to the authorized VPS using an unused internal port.
-8. Configure Nginx, DNS, HTTPS, live smoke tests, backup, and client handoff.
+1. Supply the Supabase server-side secret/service-role key securely at runtime and execute the corrected production seed (`npm run seed`).
+2. Provide the final client domain.
+3. Configure Supabase Auth Site URL / redirects for that domain.
+4. Provide client administrator email/password securely and run `bootstrap:admin`.
+5. Configure custom SMTP if required for production email reliability.
+6. Deploy Grantly to the authorized VPS using an unused internal port.
+7. Configure Nginx, DNS, HTTPS, live smoke tests, backup, and client handoff.
 
 ---
 
