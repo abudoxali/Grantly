@@ -112,6 +112,12 @@ function assertProductionConfig() {
   }
 }
 
+function databaseError(operation: string, error: { code?: string; message: string }) {
+  const errorType = error.code === '42501' ? 'security error' : 'error';
+  const code = error.code ? ` [${error.code}]` : '';
+  return new Error(`Database ${errorType}${code} ${operation}: ${error.message}`);
+}
+
 export async function getScholarships(
   filters: ScholarshipFilters = {},
   locale: 'en' | 'ar' = 'en'
@@ -148,10 +154,7 @@ export async function getScholarships(
     const { data, count, error } = await query;
     if (error) {
       if (isProduction()) {
-        if (error.code === '42501' || error.message?.includes('is_admin')) {
-          return { scholarships: [], total: 0 };
-        }
-        throw new Error(`Database error fetching scholarships: ${error.message}`);
+        throw databaseError('fetching scholarships', error);
       }
     } else if (data) {
       let results = data as Scholarship[];
@@ -299,18 +302,13 @@ export async function getScholarshipBySlug(slug: string): Promise<Scholarship | 
       return data as Scholarship;
     }
 
-    if (
-      error &&
-      (error.code === 'PGRST116' ||
-        error.code === '42501' ||
-        error.message?.includes('is_admin'))
-    ) {
+    if (error?.code === 'PGRST116') {
       return null;
     }
 
     if (error) {
       if (isProduction()) {
-        throw new Error(`Database error fetching scholarship: ${error.message}`);
+        throw databaseError('fetching scholarship', error);
       }
     }
   }
@@ -398,7 +396,7 @@ export async function updateScholarship(
       : globalStore.scholarships[idx].country,
     provider: updates.provider_id
       ? globalStore.providers.find((p) => p.id === updates.provider_id) ||
-        SEED_PROVIDERS.find((p) => p.id === updates.provider_id)
+      SEED_PROVIDERS.find((p) => p.id === updates.provider_id)
       : globalStore.scholarships[idx].provider,
   };
   return globalStore.scholarships[idx];
@@ -811,10 +809,7 @@ export async function getGuides(publishedOnly = true): Promise<Guide[]> {
     const { data, error } = await query;
     if (error) {
       if (isProduction()) {
-        if (error.code === '42501' || error.message?.includes('is_admin')) {
-          return [];
-        }
-        throw new Error(`Database error fetching guides: ${error.message}`);
+        throw databaseError('fetching guides', error);
       }
     } else if (data) {
       return data as Guide[];
@@ -845,18 +840,13 @@ export async function getGuideBySlug(slug: string): Promise<Guide | null> {
       return data as Guide;
     }
 
-    if (
-      error &&
-      (error.code === 'PGRST116' ||
-        error.code === '42501' ||
-        error.message?.includes('is_admin'))
-    ) {
+    if (error?.code === 'PGRST116') {
       return null;
     }
 
     if (error) {
       if (isProduction()) {
-        throw new Error(`Database error fetching guide: ${error.message}`);
+        throw databaseError('fetching guide', error);
       }
     }
   }

@@ -55,7 +55,7 @@ if (fs.existsSync(migration2Path)) {
   assert(
     'handle_new_user() strictly forces role = user',
     m2Content.includes("'user'::public.user_role") &&
-      !m2Content.includes("COALESCE((NEW.raw_user_meta_data->>'role')::user_role")
+    !m2Content.includes("COALESCE((NEW.raw_user_meta_data->>'role')::user_role")
   );
 
   assert(
@@ -66,13 +66,147 @@ if (fs.existsSync(migration2Path)) {
   assert(
     'prevent_profile_role_escalation raises 42501 permission denied on role change',
     m2Content.includes("RAISE EXCEPTION 'Permission denied: cannot modify user role'") &&
-      m2Content.includes("ERRCODE = '42501'")
+    m2Content.includes("ERRCODE = '42501'")
   );
 
   assert(
     'admin_audit_logs table is created with RLS enabled',
     m2Content.includes('CREATE TABLE IF NOT EXISTS public.admin_audit_logs') &&
-      m2Content.includes('ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY')
+    m2Content.includes('ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY')
+  );
+}
+
+const splitReadPoliciesPath = path.resolve(
+  process.cwd(),
+  'supabase/migrations/20261005140000_split_public_admin_read_policies.sql'
+);
+const moveAdminHelperPath = path.resolve(
+  process.cwd(),
+  'supabase/migrations/20261004224937_move_admin_helper_private.sql'
+);
+const anonGrantMigrationPath = path.resolve(
+  process.cwd(),
+  'supabase/migrations/20261005140000_grant_anon_execute_admin_helper.sql'
+);
+assert('Split public/admin read policies migration exists', fs.existsSync(splitReadPoliciesPath));
+assert('Private admin helper migration exists', fs.existsSync(moveAdminHelperPath));
+assert('Obsolete anon helper grant migration is absent', !fs.existsSync(anonGrantMigrationPath));
+
+if (fs.existsSync(splitReadPoliciesPath)) {
+  const splitPolicies = fs.readFileSync(splitReadPoliciesPath, 'utf8');
+  const policy = (name: string) =>
+    splitPolicies.match(new RegExp(`CREATE POLICY "${name}"[\\s\\S]*?;`, 'i'))?.[0] || '';
+  const publicScholarshipsPolicy = policy('Public can read published scholarships');
+  const adminScholarshipsPolicy = policy('Admins can read all scholarships');
+  const publicGuidesPolicy = policy('Public can read published guides');
+  const adminGuidesPolicy = policy('Admins can read all guides');
+
+  assert(
+    'anonymous scholarship policy reads only published rows without private.is_admin()',
+    publicScholarshipsPolicy.includes('TO anon, authenticated') &&
+    publicScholarshipsPolicy.includes('USING (published = true)') &&
+    !publicScholarshipsPolicy.includes('private.is_admin()')
+  );
+  assert(
+    'authenticated admin scholarship read policy uses private.is_admin()',
+    adminScholarshipsPolicy.includes('FOR SELECT') &&
+    adminScholarshipsPolicy.includes('TO authenticated') &&
+    adminScholarshipsPolicy.includes('USING (private.is_admin())')
+  );
+  assert(
+    'anonymous guide policy reads only published rows without private.is_admin()',
+    publicGuidesPolicy.includes('TO anon, authenticated') &&
+    publicGuidesPolicy.includes('USING (published = true)') &&
+    !publicGuidesPolicy.includes('private.is_admin()')
+  );
+  assert(
+    'authenticated admin guide read policy uses private.is_admin()',
+    adminGuidesPolicy.includes('FOR SELECT') &&
+    adminGuidesPolicy.includes('TO authenticated') &&
+    adminGuidesPolicy.includes('USING (private.is_admin())')
+  );
+
+  const migrationFiles = fs
+    .readdirSync(path.dirname(splitReadPoliciesPath))
+    .filter((file) => file.endsWith('.sql'));
+  const migrationSource = migrationFiles
+    .map((file) => fs.readFileSync(path.join(path.dirname(splitReadPoliciesPath), file), 'utf8'))
+    .join(' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+  const hasAnonPrivateGrant =
+    migrationSource.includes('grant usage on schema private to anon') ||
+    migrationSource.includes('grant execute on function private.is_admin() to anon');
+  assert('anon is not granted private schema or private.is_admin() access', !hasAnonPrivateGrant);
+
+  if (fs.existsSync(moveAdminHelperPath)) {
+    const helperMigration = fs.readFileSync(moveAdminHelperPath, 'utf8');
+    assert(
+      'private schema and private.is_admin() remain revoked from anon and public',
+      helperMigration.includes('REVOKE ALL ON SCHEMA private FROM PUBLIC, anon;') &&
+      helperMigration.includes('REVOKE ALL ON FUNCTION private.is_admin() FROM PUBLIC, anon;')
+    );
+
+    const helperPolicy = (name: string) =>
+      helperMigration.match(new RegExp(`CREATE POLICY "${name}"[\\s\\S]*?;`, 'i'))?.[0] || '';
+    const adminWritePolicies = [
+      'Admins can insert countries',
+      'Admins can update countries',
+      'Admins can delete countries',
+      'Admins can insert fields',
+      'Admins can update fields',
+      'Admins can delete fields',
+      'Admins can insert providers',
+      'Admins can update providers',
+      'Admins can delete providers',
+      'Admins can insert scholarships',
+      'Admins can update scholarships',
+      'Admins can delete scholarships',
+      'Admins can insert scholarship fields',
+      'Admins can update scholarship fields',
+      'Admins can delete scholarship fields',
+      'Admins can insert guides',
+      'Admins can update guides',
+      'Admins can delete guides',
+      'Admins can read audit logs',
+      'Admins can insert audit logs',
+      'Admins can upload media',
+      'Admins can update media',
+      'Admins can delete media',
+    ];
+    assert(
+      'admin CRUD, audit-log, and storage-write policies remain authenticated-only',
+      adminWritePolicies.every((name) => {
+        const definition = helperPolicy(name);
+        return definition.includes('TO authenticated') && definition.includes('private.is_admin()');
+      })
+    );
+    assert(
+      'profile role-escalation protection uses the private admin helper and retains 42501',
+      helperMigration.includes('IF NOT private.is_admin()') &&
+      helperMigration.includes("ERRCODE = '42501'")
+    );
+  }
+}
+
+const bookmarkPolicyPath = path.resolve(
+  process.cwd(),
+  'supabase/migrations/20261004224906_rls_performance_hardening.sql'
+);
+assert('Bookmark RLS migration exists', fs.existsSync(bookmarkPolicyPath));
+if (fs.existsSync(bookmarkPolicyPath)) {
+  const bookmarkPolicies = fs.readFileSync(bookmarkPolicyPath, 'utf8');
+  assert(
+    'bookmark reads and writes remain authenticated and owner-scoped',
+    bookmarkPolicies.includes(
+      'CREATE POLICY "Users can read own bookmarks" ON public.bookmarks FOR SELECT TO authenticated USING ((SELECT auth.uid()) = user_id);'
+    ) &&
+    bookmarkPolicies.includes(
+      'CREATE POLICY "Users can insert own bookmarks" ON public.bookmarks FOR INSERT TO authenticated WITH CHECK ((SELECT auth.uid()) = user_id);'
+    ) &&
+    bookmarkPolicies.includes(
+      'CREATE POLICY "Users can delete own bookmarks" ON public.bookmarks FOR DELETE TO authenticated USING ((SELECT auth.uid()) = user_id);'
+    )
   );
 }
 
@@ -282,6 +416,15 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
   };
 }
 
+async function captureError(action: () => Promise<unknown>) {
+  try {
+    await action();
+    return null;
+  } catch (error) {
+    return error;
+  }
+}
+
 (async () => {
   console.log('\n--- 6. Production Supabase Repository Fallback Regression Tests ---');
 
@@ -344,7 +487,7 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
     'Query failed silently and returned local seed data'
   );
 
-  // 3b. production + 42501 RLS permission error on empty table => returns [] and total 0, NOT seed data
+  // 3b. production + 42501 RLS permission error => throws a security error without seed fallback
   __setSupabaseClientForTesting(
     createMockSupabase({
       scholarships: async () => ({
@@ -353,18 +496,25 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
       }),
     })
   );
-  const rlsEmptySch = await getScholarships();
+  const scholarshipRlsError = await captureError(() => getScholarships());
   assert(
-    'production + 42501 RLS permission error on empty scholarships returns [] and total 0, NOT seed data',
-    rlsEmptySch.scholarships.length === 0 && rlsEmptySch.total === 0,
-    `Returned seed data: ${rlsEmptySch.scholarships.length}`
+    'production + Supabase scholarship 42501 throws an explicit database security error',
+    scholarshipRlsError instanceof Error &&
+    scholarshipRlsError.message.includes('[42501]') &&
+    scholarshipRlsError.message.includes('security error')
+  );
+  assert(
+    'production scholarship query never falls back to SEED_SCHOLARSHIPS after 42501',
+    scholarshipRlsError !== null
   );
 
-  const rlsNotFoundSlug = await getScholarshipBySlug('chevening-scholarships-uk');
+  const scholarshipDetailRlsError = await captureError(() =>
+    getScholarshipBySlug('chevening-scholarships-uk')
+  );
   assert(
-    'production + 42501 RLS permission error on slug lookup returns null, NOT seed scholarship',
-    rlsNotFoundSlug === null,
-    `Returned seed data: ${JSON.stringify(rlsNotFoundSlug?.title_en)}`
+    'production scholarship slug lookup throws on 42501 instead of returning null',
+    scholarshipDetailRlsError instanceof Error &&
+    scholarshipDetailRlsError.message.includes('[42501]')
   );
 
   // 4. production country query returning [] => returns []
@@ -452,11 +602,16 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
       }),
     })
   );
-  const rlsGuides = await getGuides(true);
+  const guideRlsError = await captureError(() => getGuides(true));
   assert(
-    'production guides query on 42501 returns [], NOT seed guides',
-    Array.isArray(rlsGuides) && rlsGuides.length === 0,
-    `Got length ${rlsGuides.length}`
+    'production + Supabase guide 42501 throws an explicit database security error',
+    guideRlsError instanceof Error &&
+    guideRlsError.message.includes('[42501]') &&
+    guideRlsError.message.includes('security error')
+  );
+  assert(
+    'production guide query never falls back to SEED_GUIDES after 42501',
+    guideRlsError !== null
   );
 
   __setSupabaseClientForTesting(
@@ -479,11 +634,13 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
       }),
     })
   );
-  const rlsMissingGuide = await getGuideBySlug('how-to-win-chevening-scholarship');
+  const guideDetailRlsError = await captureError(() =>
+    getGuideBySlug('how-to-win-chevening-scholarship')
+  );
   assert(
-    'production guide slug on 42501 returns null, NOT local seed guide',
-    rlsMissingGuide === null,
-    `Returned seed guide: ${JSON.stringify(rlsMissingGuide?.title_en)}`
+    'production guide slug lookup throws on 42501 instead of returning null',
+    guideDetailRlsError instanceof Error &&
+    guideDetailRlsError.message.includes('[42501]')
   );
 
   // 6b. production profile query does NOT return admin-seed-id or demo profiles
@@ -507,7 +664,7 @@ function createMockSupabase(handlers: Record<string, (query: any) => Promise<any
   assert(
     'local development mode can still use seed fallback where explicitly intended',
     devScholarships.scholarships.length > 0 &&
-      devScholarships.scholarships.some((s) => s.slug === 'chevening-scholarships-uk')
+    devScholarships.scholarships.some((s) => s.slug === 'chevening-scholarships-uk')
   );
 
   const devChevening = await getScholarshipBySlug('chevening-scholarships-uk');

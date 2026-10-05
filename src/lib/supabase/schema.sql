@@ -195,22 +195,29 @@ ALTER TABLE public.scholarship_fields ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.guides ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookmarks ENABLE ROW LEVEL SECURITY;
 
--- Helper function to check if current user is admin (hardened search_path)
-CREATE OR REPLACE FUNCTION public.is_admin()
+-- Private helper used only by authenticated admin policies and security triggers.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC, anon;
+GRANT USAGE ON SCHEMA private TO authenticated;
+
+CREATE OR REPLACE FUNCTION private.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'admin'
+    WHERE id = (SELECT auth.uid()) AND role = 'admin'
   );
 END;
-$$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, pg_temp;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public, private, pg_temp;
+
+REVOKE ALL ON FUNCTION private.is_admin() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION private.is_admin() TO authenticated;
 
 -- Anti-role-escalation trigger on profiles: forbids non-admins from modifying role, id, or email
 CREATE OR REPLACE FUNCTION public.prevent_profile_role_escalation()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NOT public.is_admin() THEN
+  IF NOT private.is_admin() THEN
     IF NEW.role IS DISTINCT FROM OLD.role THEN
       RAISE EXCEPTION 'Permission denied: cannot modify user role' USING ERRCODE = '42501';
     END IF;
@@ -228,6 +235,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
 
+REVOKE ALL ON FUNCTION public.prevent_profile_role_escalation() FROM PUBLIC, anon, authenticated;
+
 DROP TRIGGER IF EXISTS trg_prevent_profile_role_escalation ON public.profiles;
 CREATE TRIGGER trg_prevent_profile_role_escalation
   BEFORE UPDATE ON public.profiles
@@ -241,7 +250,7 @@ CREATE TRIGGER trg_prevent_profile_role_escalation
 CREATE POLICY "Users can read own profile or admins all"
   ON public.profiles FOR SELECT
   TO authenticated
-  USING (auth.uid() = id OR public.is_admin());
+  USING (auth.uid() = id OR private.is_admin());
 
 -- Users can update only their own profile, role must remain unchanged
 CREATE POLICY "Users can update own non-privileged profile data"
@@ -257,8 +266,8 @@ CREATE POLICY "Users can update own non-privileged profile data"
 CREATE POLICY "Admins can update any profile"
   ON public.profiles FOR UPDATE
   TO authenticated
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
 
 -- Users can insert their own profile on signup
 CREATE POLICY "Users can insert own profile"
@@ -278,8 +287,9 @@ CREATE POLICY "Public can read countries"
 -- Admins can do full CRUD on countries
 CREATE POLICY "Admins have full CRUD on countries"
   ON public.countries FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- FIELDS POLICIES
@@ -293,8 +303,9 @@ CREATE POLICY "Public can read fields"
 -- Admins can do full CRUD on fields
 CREATE POLICY "Admins have full CRUD on fields"
   ON public.fields FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- PROVIDERS POLICIES
@@ -308,23 +319,39 @@ CREATE POLICY "Public can read providers"
 -- Admins have full CRUD on providers
 CREATE POLICY "Admins have full CRUD on providers"
   ON public.providers FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- SCHOLARSHIPS POLICIES
 -- ------------------------------------------------------------------------------
--- Public can read published scholarships; admins can read all (including unpublished)
+-- Public users read published scholarships; admins may read unpublished records.
 CREATE POLICY "Public can read published scholarships"
   ON public.scholarships FOR SELECT
-  TO public
-  USING (published = true OR public.is_admin());
+  TO anon, authenticated
+  USING (published = true);
 
--- Admins have full CRUD on scholarships
-CREATE POLICY "Admins have full CRUD on scholarships"
-  ON public.scholarships FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+CREATE POLICY "Admins can read all scholarships"
+  ON public.scholarships FOR SELECT
+  TO authenticated
+  USING (private.is_admin());
+
+CREATE POLICY "Admins can insert scholarships"
+  ON public.scholarships FOR INSERT
+  TO authenticated
+  WITH CHECK (private.is_admin());
+
+CREATE POLICY "Admins can update scholarships"
+  ON public.scholarships FOR UPDATE
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
+
+CREATE POLICY "Admins can delete scholarships"
+  ON public.scholarships FOR DELETE
+  TO authenticated
+  USING (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- SCHOLARSHIP_FIELDS POLICIES
@@ -338,23 +365,39 @@ CREATE POLICY "Public can read scholarship fields"
 -- Admins have full CRUD on scholarship_fields
 CREATE POLICY "Admins have full CRUD on scholarship fields"
   ON public.scholarship_fields FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- GUIDES POLICIES
 -- ------------------------------------------------------------------------------
--- Public can read published guides; admins can read all
+-- Public users read published guides; admins may read unpublished records.
 CREATE POLICY "Public can read published guides"
   ON public.guides FOR SELECT
-  TO public
-  USING (published = true OR public.is_admin());
+  TO anon, authenticated
+  USING (published = true);
 
--- Admins have full CRUD on guides
-CREATE POLICY "Admins have full CRUD on guides"
-  ON public.guides FOR ALL
-  USING (public.is_admin())
-  WITH CHECK (public.is_admin());
+CREATE POLICY "Admins can read all guides"
+  ON public.guides FOR SELECT
+  TO authenticated
+  USING (private.is_admin());
+
+CREATE POLICY "Admins can insert guides"
+  ON public.guides FOR INSERT
+  TO authenticated
+  WITH CHECK (private.is_admin());
+
+CREATE POLICY "Admins can update guides"
+  ON public.guides FOR UPDATE
+  TO authenticated
+  USING (private.is_admin())
+  WITH CHECK (private.is_admin());
+
+CREATE POLICY "Admins can delete guides"
+  ON public.guides FOR DELETE
+  TO authenticated
+  USING (private.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- BOOKMARKS POLICIES
@@ -398,6 +441,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -457,12 +502,12 @@ ALTER TABLE public.admin_audit_logs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Admins can read audit logs"
   ON public.admin_audit_logs FOR SELECT
   TO authenticated
-  USING (public.is_admin());
+  USING (private.is_admin());
 
 CREATE POLICY "Admins can insert audit logs"
   ON public.admin_audit_logs FOR INSERT
   TO authenticated
-  WITH CHECK (public.is_admin());
+  WITH CHECK (private.is_admin());
 
 -- ==============================================================================
 -- STORAGE CONFIGURATION (Buckets: scholarship-covers, provider-logos, guide-images)
@@ -497,7 +542,7 @@ DO $$ BEGIN
     TO authenticated
     WITH CHECK (
       bucket_id IN ('scholarship-covers', 'provider-logos', 'guide-images')
-      AND public.is_admin()
+      AND private.is_admin()
     );
 
   CREATE POLICY "Admins can update media"
@@ -505,11 +550,11 @@ DO $$ BEGIN
     TO authenticated
     USING (
       bucket_id IN ('scholarship-covers', 'provider-logos', 'guide-images')
-      AND public.is_admin()
+      AND private.is_admin()
     )
     WITH CHECK (
       bucket_id IN ('scholarship-covers', 'provider-logos', 'guide-images')
-      AND public.is_admin()
+      AND private.is_admin()
     );
 
   CREATE POLICY "Admins can delete media"
@@ -517,7 +562,7 @@ DO $$ BEGIN
     TO authenticated
     USING (
       bucket_id IN ('scholarship-covers', 'provider-logos', 'guide-images')
-      AND public.is_admin()
+      AND private.is_admin()
     );
 EXCEPTION
   WHEN undefined_table THEN null;
