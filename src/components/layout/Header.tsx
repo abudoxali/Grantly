@@ -23,7 +23,6 @@ import {
   Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
 
 export function Header() {
   const { locale, t } = useI18n();
@@ -123,8 +122,8 @@ export function Header() {
           : 'bg-white/90 backdrop-blur-sm border-border/70'
       )}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-[4.5rem]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:max-w-[88rem]">
+        <div className="flex items-center justify-between h-16 sm:h-[4.5rem] 2xl:h-20">
           {/* Logo */}
           <div className="xl:hidden">
             <Logo size="sm" showSubtitle={false} />
@@ -134,7 +133,7 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-1" aria-label={isAr ? 'التنقل الرئيسي' : 'Main navigation'}>
+          <nav className="hidden xl:flex items-center gap-1 2xl:gap-2" aria-label={isAr ? 'التنقل الرئيسي' : 'Main navigation'}>
             {navLinks.map((link) => {
               const active = isActive(link.href);
 
@@ -144,7 +143,7 @@ export function Header() {
                   href={link.href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'relative inline-flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-medium transition-colors',
+                    'relative inline-flex min-h-11 items-center rounded-xl px-3 py-2 text-sm font-medium transition-colors 2xl:px-3.5 2xl:text-[0.9375rem]',
                     active
                       ? 'bg-primary-soft/70 text-primary font-semibold'
                       : 'text-slate-600 hover:bg-background hover:text-text-primary'
@@ -160,7 +159,7 @@ export function Header() {
           </nav>
 
           {/* Desktop Right Side Controls */}
-          <div className="hidden xl:flex items-center gap-2">
+          <div className="hidden xl:flex items-center gap-2 2xl:gap-2.5">
             {/* Language Switcher */}
             <LanguageSwitcher />
 
@@ -213,15 +212,12 @@ export function Header() {
                 >
                   {t.common.login}
                 </Link>
-                <Link href={`/${locale}/scholarships`}>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    className="px-4 text-xs font-semibold"
-                    rightIcon={<ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />}
-                  >
-                    {t.nav.findScholarships}
-                  </Button>
+                <Link
+                  href={`/${locale}/scholarships`}
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 2xl:text-sm"
+                >
+                  {t.nav.findScholarships}
+                  <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
                 </Link>
               </div>
             )}
@@ -343,7 +339,7 @@ export function Header() {
             </nav>
 
             {/* Mobile Auth and Action */}
-            <div className="border-t border-border bg-background p-4">
+            <div className="border-t border-border bg-background p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               {user ? (
                 <div className="flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-3 px-1 text-xs font-medium text-muted">

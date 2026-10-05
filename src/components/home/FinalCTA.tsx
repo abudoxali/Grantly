@@ -4,7 +4,6 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useI18n } from '@/i18n/context';
 import { Compass, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 
 export function FinalCTA() {
   const { locale, t } = useI18n();
@@ -26,25 +25,19 @@ export function FinalCTA() {
           {t.home.ctaDesc}
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href={`/${locale}/scholarships`}>
-            <Button
-              variant="primary"
-              size="lg"
-              rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}
-              className="w-full sm:w-auto h-12 px-8 font-bold"
-            >
-              {t.home.ctaButton}
-            </Button>
+        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <Link
+            href={`/${locale}/scholarships`}
+            className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-8 py-3 text-base font-bold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 sm:w-auto"
+          >
+            {t.home.ctaButton}
+            <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
           </Link>
-          <Link href={`/${locale}/countries`}>
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full sm:w-auto h-12 px-8 bg-transparent text-white border-slate-700 hover:bg-slate-800"
-            >
-              {t.home.ctaSecondary}
-            </Button>
+          <Link
+            href={`/${locale}/countries`}
+            className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2.5 rounded-xl border border-slate-700 bg-transparent px-8 py-3 text-base text-white shadow-xs transition-all hover:bg-slate-800 active:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 sm:w-auto"
+          >
+            {t.home.ctaSecondary}
           </Link>
         </div>
       </div>

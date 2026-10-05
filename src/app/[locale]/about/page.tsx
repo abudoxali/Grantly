@@ -5,7 +5,6 @@ import { notFound } from 'next/navigation';
 import { isValidLocale, getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/types';
 import { ShieldCheck, HeartHandshake, Globe2, Compass, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 
 interface AboutPageProps {
   params: Promise<{ locale: string }>;
@@ -118,15 +117,12 @@ export default async function LocalizedAboutPage({ params }: AboutPageProps) {
               ? 'جرانتلي منصة مستقلة تماماً. نحن لا نقبل طلبات التقديم نيابة عن الطلاب، ولا نضمن القبول لأحد، ونوجه الجميع دائماً إلى الموقع الرسمي للمنحة. نجاحنا يقاس بعدد الطلاب الذين يصلون إلى البوابات الرسمية بثقة ووضوح.'
               : 'Grantly is strictly independent. We do not act as admissions representatives, accept application fees, or guarantee admissions. We empower students with clear intelligence and direct official links.'}
           </p>
-          <Link href={`/${locale}/scholarships`}>
-            <Button
-              variant="primary"
-              size="md"
-              rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}
-              className="font-bold px-6"
-            >
-              {t.nav.findScholarships}
-            </Button>
+          <Link
+            href={`/${locale}/scholarships`}
+            className="inline-flex h-11 min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+          >
+            {t.nav.findScholarships}
+            <ArrowRight className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>
       </div>

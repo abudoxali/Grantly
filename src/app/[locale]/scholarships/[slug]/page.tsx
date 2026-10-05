@@ -7,7 +7,6 @@ import { isValidLocale, getDictionary } from '@/i18n/get-dictionary';
 import type { Locale } from '@/i18n/types';
 import { formatDate, formatStipend, formatDegreeLevel, getDaysRemaining } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { ScholarshipCard } from '@/components/scholarships/ScholarshipCard';
 import { ScholarshipDetailClient } from './ScholarshipDetailClient';
 import {
@@ -321,16 +320,10 @@ export default async function LocalizedScholarshipDetailPage({
                 href={scholarship.official_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full"
+                className="inline-flex h-12 min-h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
               >
-                <Button
-                  variant="primary"
-                  size="lg"
-                  className="w-full justify-center text-sm font-bold h-12 shadow-sm shadow-primary/20"
-                  rightIcon={<ExternalLink className="w-4 h-4 rtl:rotate-180" />}
-                >
-                  {t.details.proceedToOfficialPortal}
-                </Button>
+                {t.details.proceedToOfficialPortal}
+                <ExternalLink className="w-4 h-4 rtl:rotate-180" aria-hidden="true" />
               </a>
 
               {/* Disclaimer Notice */}

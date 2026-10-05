@@ -235,23 +235,24 @@ if (fs.existsSync(authContextPath)) {
   );
 }
 
-const middlewarePath = path.resolve(process.cwd(), 'src/middleware.ts');
-if (fs.existsSync(middlewarePath)) {
-  const mwContent = fs.readFileSync(middlewarePath, 'utf8');
+const proxyPath = path.resolve(process.cwd(), 'src/proxy.ts');
+assert('Next.js proxy file convention is used', fs.existsSync(proxyPath));
+if (fs.existsSync(proxyPath)) {
+  const proxyContent = fs.readFileSync(proxyPath, 'utf8');
 
   assert(
-    'middleware uses Supabase server auth getUser()',
-    mwContent.includes('supabase.auth.getUser()')
+    'proxy uses Supabase server auth getUser()',
+    proxyContent.includes('supabase.auth.getUser()')
   );
 
   assert(
-    'middleware verifies admin role against profiles table',
-    mwContent.includes("from('profiles')") && mwContent.includes("role")
+    'proxy verifies admin role against profiles table',
+    proxyContent.includes("from('profiles')") && proxyContent.includes("role")
   );
 
   assert(
-    'middleware blocks unconfigured backend in production',
-    mwContent.includes('backend_unconfigured')
+    'proxy blocks unconfigured backend in production',
+    proxyContent.includes('backend_unconfigured')
   );
 }
 

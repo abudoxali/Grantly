@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Compass, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 
 export default function NotFound() {
   const pathname = usePathname() || '';
@@ -30,15 +29,12 @@ export default function NotFound() {
             ? 'تعذر العثور على المنحة أو الصفحة التي تبحث عنها. ربما نُقلت أو لم تُنشر بعد.'
             : 'The scholarship or page you are looking for could not be found. It may have moved or is not published yet.'}
         </p>
-        <Link href={isAr ? '/ar' : '/en'}>
-          <Button
-            variant="primary"
-            size="md"
-            className="w-full justify-center font-semibold"
-            rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
-          >
-            {isAr ? 'العودة إلى الرئيسية' : 'Return to homepage'}
-          </Button>
+        <Link
+          href={isAr ? '/ar' : '/en'}
+          className="inline-flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+        >
+          {isAr ? 'العودة إلى الرئيسية' : 'Return to homepage'}
+          <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
         </Link>
       </div>
     </div>

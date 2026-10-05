@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useI18n } from '@/i18n/context';
 import type { Country } from '@/lib/supabase/types';
 import { ArrowRight, Globe2, Wallet } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatLivingCost } from '@/lib/utils';
 
@@ -30,15 +29,12 @@ export function ExploreByDestination({ countries }: ExploreByDestinationProps) {
               {t.home.exploreDestinationsSubtitle}
             </h2>
           </div>
-          <Link href={`/${locale}/countries`}>
-            <Button
-              variant="outline"
-              size="sm"
-              rightIcon={<ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />}
-              className="h-11 text-xs font-semibold"
-            >
-              {t.nav.exploreDestinations}
-            </Button>
+          <Link
+            href={`/${locale}/countries`}
+            className="inline-flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold text-text-primary shadow-xs transition-all hover:border-primary-border hover:bg-background active:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+          >
+            {t.nav.exploreDestinations}
+            <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>
 

@@ -5,7 +5,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 const LOCALES = ['en', 'ar'];
 const DEFAULT_LOCALE = 'en';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Ignore static assets, next internal files, and api routes

@@ -6,7 +6,6 @@ import { useI18n } from '@/i18n/context';
 import type { Scholarship } from '@/lib/supabase/types';
 import { ScholarshipCard } from '@/components/scholarships/ScholarshipCard';
 import { ArrowRight, GraduationCap } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 interface FeaturedScholarshipsProps {
@@ -30,15 +29,12 @@ export function FeaturedScholarships({ scholarships }: FeaturedScholarshipsProps
               {t.home.featuredSubtitle}
             </h2>
           </div>
-          <Link href={`/${locale}/scholarships`}>
-            <Button
-              variant="outline"
-              size="sm"
-              rightIcon={<ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />}
-              className="h-11 text-xs font-semibold"
-            >
-              {t.nav.findScholarships}
-            </Button>
+          <Link
+            href={`/${locale}/scholarships`}
+            className="inline-flex h-11 min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold text-text-primary shadow-xs transition-all hover:border-primary-border hover:bg-background active:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+          >
+            {t.nav.findScholarships}
+            <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" aria-hidden="true" />
           </Link>
         </div>
 

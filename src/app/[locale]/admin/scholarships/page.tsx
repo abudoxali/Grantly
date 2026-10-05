@@ -22,7 +22,6 @@ import {
   Star,
   CheckCircle2,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { formatDate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -126,15 +125,12 @@ export default function AdminScholarshipsPage() {
           </p>
         </div>
 
-        <Link href={`/${locale}/admin/scholarships/new`}>
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="w-4 h-4" />}
-            className="text-xs font-bold"
-          >
-            {isAr ? 'إضافة منحة جديدة' : 'Add Scholarship'}
-          </Button>
+        <Link
+          href={`/${locale}/admin/scholarships/new`}
+          className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-white shadow-sm shadow-primary/20 transition-all hover:bg-primary-hover active:bg-primary-active focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2"
+        >
+          <Plus className="w-4 h-4" aria-hidden="true" />
+          {isAr ? 'إضافة منحة جديدة' : 'Add Scholarship'}
         </Link>
       </div>
 

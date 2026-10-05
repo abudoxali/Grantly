@@ -90,7 +90,7 @@ function ScholarshipSpotlight({
   return (
     <Link
       href={`/${locale}/scholarships/${scholarship.slug}`}
-      className="card-surface card-interactive group block rounded-2xl p-4 backdrop-blur-md"
+      className="card-surface card-interactive group block rounded-2xl p-3.5 backdrop-blur-sm"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -174,7 +174,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
   };
 
   return (
-    <section className="relative overflow-hidden border-b border-border/70 bg-gradient-to-b from-background via-white to-white py-10 sm:py-14 lg:py-16">
+    <section className="relative overflow-hidden border-b border-border/70 bg-gradient-to-b from-background via-white to-white py-8 sm:py-10 lg:py-12">
       {/* High-Tech Animated Geometric & Orbital Blueprint Canvas */}
       <HeroGeometricBackground />
 
@@ -183,12 +183,12 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
         {spotlightScholarships.length > 0 && (
           <div className="pointer-events-none absolute inset-x-0 top-6 z-10 hidden xl:block">
             {/* Flank 1: First published scholarship */}
-            <div className="pointer-events-auto absolute start-0 top-4 w-[min(14rem,22vw)] animate-float-slow">
+            <div className="pointer-events-auto absolute start-0 top-4 w-[min(13rem,20vw)] animate-float-slow">
               <ScholarshipSpotlight scholarship={spotlightScholarships[0]} {...spotlightProps} />
             </div>
             {/* Flank 2: Next published scholarship */}
             {spotlightScholarships[1] && (
-              <div className="pointer-events-auto absolute end-0 top-16 w-[min(14rem,22vw)] animate-float-reverse">
+              <div className="pointer-events-auto absolute end-0 top-16 w-[min(13rem,20vw)] animate-float-reverse">
                 <ScholarshipSpotlight scholarship={spotlightScholarships[1]} {...spotlightProps} />
               </div>
             )}
@@ -196,7 +196,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
         )}
 
         {/* Center Stage: Hero Content */}
-        <div className="relative z-20 mx-auto max-w-2xl text-center">
+        <div className="relative z-20 mx-auto max-w-2xl text-center xl:max-w-3xl 2xl:max-w-[52rem]">
           {/* Top Live Verification Radar Beacon */}
           <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-primary-border/70 bg-white/90 px-3.5 py-2 text-xs font-semibold text-text-secondary shadow-xs backdrop-blur-sm sm:px-4">
             <span className="inline-flex h-2 w-2 shrink-0 rounded-full bg-success" />
@@ -209,7 +209,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
           </div>
 
           {/* Main Headline with High-End Precision Typography */}
-          <h1 className="mt-5 text-balance text-3xl font-semibold leading-[1.24] tracking-tight text-text-primary sm:text-5xl sm:leading-[1.18] lg:text-6xl">
+          <h1 className="mt-4 text-balance text-3xl font-semibold leading-[1.24] tracking-tight text-text-primary sm:text-5xl sm:leading-[1.18] lg:text-[3.5rem] 2xl:text-6xl">
             {t.home.headlineStart}{' '}
             <span className="relative inline-block">
               <span className="bg-gradient-to-r from-primary via-accent to-primary-hover bg-clip-text text-transparent font-bold">
@@ -221,7 +221,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
           </h1>
 
           {/* Subheadline with Generous Breathing Room */}
-          <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-text-secondary sm:mt-6 sm:text-lg">
+          <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-text-secondary sm:text-lg">
             {t.home.subheadline}
           </p>
 
@@ -229,7 +229,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
           <form
             onSubmit={handleSearch}
             role="search"
-            className="group mx-auto mt-7 flex w-full max-w-2xl flex-col gap-2 rounded-2xl border border-border bg-white/95 p-2 shadow-card backdrop-blur-md transition-all duration-200 hover:border-primary-border focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 sm:flex-row sm:items-center"
+            className="group mx-auto mt-6 flex w-full max-w-2xl flex-col gap-2 rounded-2xl border border-border bg-white/95 p-2 shadow-card backdrop-blur-md transition-all duration-200 hover:border-primary-border focus-within:border-primary focus-within:ring-4 focus-within:ring-primary/10 sm:flex-row sm:items-center xl:max-w-3xl 2xl:max-w-[52rem]"
           >
             <label htmlFor="hero-scholarship-search" className="sr-only">
               {t.home.searchPlaceholder}
@@ -259,7 +259,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
           </form>
 
           {/* Popular Search Tags */}
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-text-secondary">
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-text-secondary">
             <span className="inline-flex min-h-11 items-center gap-1.5 px-1 font-semibold text-text-secondary">
               <Compass className="h-3.5 w-3.5 text-mauve" />
               <span>{t.home.popularSearches}</span>
@@ -277,7 +277,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
                     router.push(`/${locale}/scholarships?country=${encodeURIComponent(tag.query)}`);
                   }
                 }}
-                className="inline-flex min-h-11 items-center rounded-full border border-border bg-white px-3 text-xs font-medium text-text-secondary shadow-2xs transition-colors hover:border-primary-border hover:bg-primary-soft hover:text-primary"
+                className="inline-flex min-h-11 items-center rounded-full border border-primary-border/70 bg-primary-50 px-3 text-xs font-medium text-text-secondary shadow-2xs transition-colors hover:border-primary-border hover:bg-primary-soft hover:text-primary"
               >
                 {tag.label}
               </button>
@@ -286,7 +286,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
 
           {/* Tablet Spotlight Cards (phones keep the hero distraction-free) */}
           {spotlightScholarships.length > 0 && (
-            <div className="mt-8 hidden grid-cols-2 gap-3 text-start md:grid xl:hidden">
+            <div className="mt-8 hidden grid-cols-2 gap-3 text-start lg:grid xl:hidden">
               {spotlightScholarships.slice(0, 2).map((scholarship) => (
                 <ScholarshipSpotlight key={scholarship.id} scholarship={scholarship} {...spotlightProps} />
               ))}
@@ -294,7 +294,7 @@ export function HomeHero({ stats, spotlightScholarships = [] }: HomeHeroProps) {
           )}
 
           {/* Telemetry Metrics Bar */}
-          <div className="mx-auto mt-9 grid max-w-4xl grid-cols-2 gap-3 border-t border-border/70 pt-7 sm:mt-11 sm:gap-4 lg:grid-cols-4">
+          <div className="mx-auto mt-7 grid max-w-4xl grid-cols-2 gap-3 border-t border-border/70 pt-6 sm:mt-8 sm:gap-4 lg:grid-cols-4">
             <div className="card-surface flex flex-col items-center rounded-2xl p-3.5 text-center sm:p-4">
               <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-primary-soft text-primary">
                 <GraduationCap className="h-5 w-5" aria-hidden="true" />
