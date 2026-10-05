@@ -1,187 +1,118 @@
-# Grantly Production and Brand/UI Status
+# Grantly Final Production Launch Status
 
-**Platform**: Grantly — Bilingual Global Scholarship Discovery Platform
-**Target architecture**: Next.js 16 standalone + Supabase PostgreSQL + PM2 + Nginx
-**Date**: October 5, 2026
-**Status**: Live RLS migration parity remains verified. The premium pink-led brand/UI milestone is implemented and deployed from application source SHA `bdd673d2a28b50b2dffbe53d1f8b0a27ffe52c30` to fresh VPS release `20261005174013`. Health/readiness and production route smoke checks pass. Production catalog remains intentionally unseeded. Pixel-level review of the full 360–1920px viewport matrix is pending user browser captures.
+**As of:** October 5, 2026
+**Repository:** `https://github.com/abudoxali/Grantly.git` (`main`)
+**Project:** Bilingual global scholarship discovery platform
+**Decision:** Not launch-complete; see verified blockers below.
+**Strict launch checklist completion:** 42% (10 of 24 acceptance checks fully verified; partial checks are not counted).
 
----
+## Source and quality gates
 
-## 1. Source Control
-
-- **Repository**: `https://github.com/abudoxali/Grantly.git`
-- **Branch**: `main`
-- **GitHub HEAD at start of the UI pass**: `388db9bb67415f3a363b92f881584596203074cb`
-- **Application-source GitHub HEAD and deployed SHA**: `bdd673d2a28b50b2dffbe53d1f8b0a27ffe52c30`
-- **GitHub Actions for application source**: Run `37348114802` completed successfully.
-- **Final repository HEAD**: the application-source commit above plus the later `STATUS.md`-only record commit; the deployed application SHA remains unchanged.
-- **Secrets committed**: None
-
----
-
-## 2. Live Supabase and Migration Parity
-
-- **Project**: `Grantly` (`hyhtgwxmcjrwcucozbov`), region `eu-central-1`
-- **Database**: PostgreSQL 17
-- **LIVE RLS MIGRATION = APPLIED**
-- **Live migration version**: `20261005131712_split_public_admin_read_policies`
-- **Repository migration**: `supabase/migrations/20261005131712_split_public_admin_read_policies.sql`
-- **Migration parity**: **PASS** — the repository filename matches the live migration-history version. The old `20261005140000_...` filename and duplicate migration are absent.
-- **Security Advisor**: 0 security lints after the live RLS change, per authorized Supabase administration verification.
-
-### Verified live privileges and anonymous query results
-
-- `anon` private schema USAGE: **false**
-- `anon` `private.is_admin()` EXECUTE: **false**
-- `authenticated` private schema USAGE: **true**
-- `authenticated` `private.is_admin()` EXECUTE: **true**
-
-Anonymous published-content queries succeeded without 42501:
-
-| Table | Anonymous result |
-| --- | ---: |
-| `scholarships` (`published = true`) | 0 rows |
-| `guides` (`published = true`) | 0 rows |
-| `countries` | 0 rows |
-| `fields` | 0 rows |
-| `providers` | 0 rows |
-| `scholarship_fields` | 0 rows |
-
-### RLS policy design
-
-- Scholarships and guides each have a public SELECT policy for `anon, authenticated` using only `published = true`.
-- Each has a separate authenticated-admin SELECT policy using `private.is_admin()`.
-- Admin CRUD, profile role-escalation protection, bookmark ownership, audit-log protection, and Storage write protections remain intact.
-- Public policies do not invoke the private admin helper; no anonymous private-schema/helper privilege was granted.
-
----
-
-## 3. Production Repository Behavior
-
-`src/lib/db/repository.ts` preserves strict production behavior:
-
-- Successful empty list queries (`data = []`, `error = null`) return genuine empty lists.
-- Legitimate `PGRST116` single-row not-found results return `null`.
-- Production `42501` errors throw `Database security error [42501] ...`; they do not become `[]` or `null`.
-- Production queries do not fall back to `LocalDataStore` or `SEED_*`.
-- Development-only fixture behavior remains restricted to development.
-
----
-
-## 4. Quality Gates
-
-Local quality gates on the deployed UI source:
+- **Application source SHA:** `54ae83e3b9399752377d38724e4248267968de6c`
+- **Deployed application SHA:** `54ae83e3b9399752377d38724e4248267968de6c`
+- **Source commit GitHub Actions:** run `37373541594`, completed successfully.
+- **Final repository HEAD:** the source commit above followed by this `STATUS.md`-only record commit. The exact post-record HEAD is included in the final closure report because a commit cannot embed its own hash.
+- **Secrets committed:** None.
 
 | Gate | Result |
 | --- | --- |
-| `npm ci` | PASS |
+| `npm ci` | PASS in an isolated clean checkout and fresh VPS release |
 | `npm run preflight` | PASS (7/7) |
 | `npx tsc --noEmit` | PASS |
 | `npm run lint` | PASS |
-| `npm test` | PASS (59/59) |
+| `npm test` | PASS (60/60) |
 | `npm run seed -- --dry-run` | PASS (12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides) |
 | `npm run build` | PASS (Next.js 16.3.8 standalone) |
-| `npm audit --omit=dev --audit-level=high` | PASS (0 production dependency vulnerabilities) |
+| `npm audit --omit=dev --audit-level=high` | PASS (0 production vulnerabilities) |
+| GitHub Actions for source commit | PASS (run `37373541594`) |
 
-The local and VPS production builds emit the existing Next.js middleware-convention deprecation warning but complete successfully. Local preview used `next dev --webpack` because the default Windows Turbopack dev server failed to resolve `@vercel/turbopack/postcss`; no project build configuration was changed. `npm ci` reports five high advisories in the dev-inclusive dependency tree; the existing production-only audit remains at 0 vulnerabilities, and no dependency/security policy changes were made.
+The dependency tree still reports high advisories in development dependencies during installation; the required production-only audit reports zero, and no broad dependency upgrade was made. The deprecated Next.js middleware convention was migrated to `src/proxy.ts`; the final build no longer reports that deprecation.
 
-The active VPS release also passed `npm ci` (413 packages), preflight, typecheck, lint, 59/59 tests, seed dry-run, production build with the protected environment link, and standalone asset packaging. Shared logs were linked only after `npm run build`.
+## Production runtime and rollback
 
----
+- **VPS:** `5.189.151.43` (`vmi3595755`); internal application port `3300`.
+- **Active release:** `/var/www/grantly/releases/20261005230824`.
+- **Release `.source-sha`:** `54ae83e3b9399752377d38724e4248267968de6c`.
+- **Protected environment:** `.env.local` links to `/var/www/grantly/shared/.env.production`; file mode `600 root:root`. Values were not printed.
+- **Shared logs:** `/var/www/grantly/shared/logs` was linked only after the candidate build and standalone packaging.
+- **Runtime:** Node `v22.23.2`; PM2 `7.0.4`; exactly two online `grantly` cluster workers, both with cwd `/var/www/grantly/releases/20261005230824`.
+- **Health:** `GET http://127.0.0.1:3300/api/health` returns HTTP 200 (`status=ok`).
+- **Readiness:** `GET http://127.0.0.1:3300/api/ready` returns HTTP 200 (`database=connected`).
+- **Runtime log check:** last 300 shared Grantly log lines contained zero `42501`, `backend_unconfigured`, private-admin permission, or mock/seed-fallback markers.
+- **Port exposure:** an external connection attempt to `5.189.151.43:3300` timed out. No firewall rule or port configuration was changed.
+- **Candidate verification:** standalone server, `public/`, and `.next/static/` were verified before activation. The production candidate passed health/readiness and bilingual route smoke checks. The unseeded scholarship detail correctly remains 404.
+- **Rollback release retained:** `/var/www/grantly/releases/20261005174013` (source `bdd673d2a28b50b2dffbe53d1f8b0a27ffe52c30`). A controlled rollback drill activated it, verified its two PM2 workers/cwd plus health/readiness 200, then restored the new release and verified its two workers/cwd plus health/readiness 200.
 
-## 5. VPS Deployment and Runtime Verification
+Exact rollback command for the retained release:
 
-- **VPS**: `5.189.151.43` (`vmi3595755`), SSH user `root`
-- **Internal application port**: `3300`
-- **Fresh active release**: `/var/www/grantly/releases/20261005174013`
-- **Deployed source SHA**: `bdd673d2a28b50b2dffbe53d1f8b0a27ffe52c30`
-- **Source verification**: The release `.source-sha` matches the deployed source SHA.
-- **Environment**: `.env.local` links to `/var/www/grantly/shared/.env.production`; values were not printed.
-- **Shared logs**: Linked to `/var/www/grantly/shared/logs` only after the release build and standalone asset packaging completed.
-- **Current symlink**: `/var/www/grantly/current` resolves to `/var/www/grantly/releases/20261005174013`.
-- **PM2**: Exactly two `grantly` cluster instances are online and run with cwd `/var/www/grantly/releases/20261005174013`. Port 3300 is listening. PM2’s reload path retained the previous cwd on this VPS, so, with explicit approval, only the two `grantly` entries were briefly stopped and recreated from the new release. The unrelated `mohamy-phone-admin` process remained online and was not changed.
-- **Health**: `GET /api/health` — HTTP 200.
-- **Readiness**: `GET /api/ready` — HTTP 200, database connected.
-- **Runtime logs**: Last 300 `grantly` log lines had zero `42501`, `backend_unconfigured`, `permission denied for function is_admin`, mock-fallback, or unhandled-runtime markers.
+```sh
+OLD=/var/www/grantly/releases/20261005174013
+LINK=/var/www/grantly/.current-rollback-20261005230824
+ln -s "$OLD" "$LINK" && mv -Tf "$LINK" /var/www/grantly/current
+cd /var/www/grantly/current
+pm2 delete grantly
+pm2 start ecosystem.config.cjs --env production
+curl -fsS http://127.0.0.1:3300/api/health
+curl -fsS http://127.0.0.1:3300/api/ready
+```
 
-### Application smoke verification
+## Supabase, data, Auth, and Storage
 
-| Route | Result |
-| --- | --- |
-| `/en`, `/ar` | HTTP 200 |
-| `/en/scholarships`, `/ar/scholarships` | HTTP 200; no production catalog rows seeded |
-| `/en/countries`, `/ar/countries` | HTTP 200; bilingual branded empty-state copy rendered |
-| `/en/fields`, `/ar/fields` | HTTP 200; bilingual branded empty-state copy rendered |
-| `/en/guides`, `/ar/guides` | HTTP 200; bilingual branded empty-state copy rendered |
-| `/en/auth/login`, `/ar/auth/login` | HTTP 200 |
-| `/en/auth/register`, `/ar/auth/register` | HTTP 200 |
-| `/en/auth/forgot-password`, `/ar/auth/reset-password` | HTTP 200 |
-| `/en/account/saved`, `/ar/account/profile` | HTTP 200 |
-| `/en/admin/login`, `/ar/admin/login` | HTTP 200 |
-| `/en/admin` | HTTP 307 to the protected admin login route |
-| `/en/scholarships/chevening-scholarships-uk`, `/ar/scholarships/chevening-scholarships-uk` | HTTP 404 |
-| `/en/guides/winning-scholarship-motivation-letter` | HTTP 404 |
+- **Project:** Grantly, ref `hyhtgwxmcjrwcucozbov`; PostgreSQL 17.
+- **Migration parity:** last authorized check reported applied migration `20261005131712_split_public_admin_read_policies`, matching `supabase/migrations/20261005131712_split_public_admin_read_policies.sql`. No database migrations were changed in this pass; parity was not re-queried because Supabase administration access is unavailable.
+- **RLS / Security Advisor:** the prior authorized verification recorded least-privilege RLS and 0 Security Advisor lints. This pass made no database/RLS changes; the Advisor was not re-queried.
+- **Current anonymous-visible row counts after deployment:**
 
-Production catalog queries remain empty and no fixture records were inserted. The scholarships directory and saved-item empty states are implemented; pixel-level browser verification of those hydrated client states is pending the requested viewport captures.
+| Table | Rows visible anonymously |
+| --- | ---: |
+| `countries` | 0 |
+| `fields` | 0 |
+| `providers` | 0 |
+| `scholarships` (publicly visible) | 0 |
+| `guides` (published/public) | 0 |
+| `scholarship_fields` | 0 |
 
-Candidate release `/var/www/grantly/releases/20261005172832` was left inactive after a raw-HTML smoke assertion did not account for client hydration; the prior release was restored automatically. No old release was modified or pruned. A later candidate `/var/www/grantly/releases/20261005174013` was activated and verified.
+These are read-only anonymous query results; unpublished scholarship/guide totals cannot be independently queried without privileged access. The repository seed data defines no scholarship-to-field association mapping.
 
----
+- **Live production seed:** NOT EXECUTED. `SUPABASE_SERVICE_ROLE_KEY`/Supabase secret key are absent from the protected app environment. No production rows were written.
+- **Expected seed dataset:** 12 countries, 8 fields, 14 providers, 14 scholarships, 5 guides; source dry-run passed.
+- **Live seed idempotency:** NOT VERIFIED; no live seed executions occurred.
+- **Real admin:** NOT CREATED. `ADMIN_EMAIL` and `ADMIN_PASSWORD` are absent. No credentials were invented or exposed.
+- **Admin Golden Path:** NOT RUN; approved admin credentials are missing.
+- **Student Golden Path:** NOT RUN; no controlled QA account credentials/test identity were provided.
+- **Storage:** source policy tests continue to require admin-only writes. Live upload/read/update/delete QA was not run because no real admin/service-role access is available.
+- **Supabase Auth URLs:** NOT CONFIGURED/VERIFIED; official domain and Supabase administration access are missing.
+- **SMTP:** NOT VERIFIED or waived. SMTP host/user/password are absent from the app environment; Supabase dashboard delivery settings were not accessible.
 
-## 6. Brand Identity and UI/UX Milestone
+## Domain, Nginx, DNS, TLS, and public smoke
 
-The frontend redesign is deployed on the existing Next.js/Supabase/PM2 architecture. No Supabase schema, RLS, Auth security, seed behavior, production data, Nginx, DNS, SSL, or unrelated services were changed.
+- **Official client domain:** NOT PROVIDED. `NEXT_PUBLIC_SITE_URL` currently resolves to `127.0.0.1:3300`; it was not replaced with an invented domain.
+- **Nginx:** no Grantly site is enabled. `nginx -t` passed; it reported a pre-existing protocol-options warning in the unrelated `mohamy.abud.fun` site. No Nginx configuration was added, changed, or reloaded.
+- **DNS:** NOT CONFIGURED/VERIFIED; no approved domain or DNS authorization was supplied.
+- **HTTPS/TLS:** NOT ACTIVE for Grantly; certificate issuance and redirects await the official domain.
+- **Public HTTPS smoke:** NOT RUN because no official domain/TLS endpoint exists. Internal production route checks passed; the internal port remains externally unreachable in the observed test.
 
-### Design system and brand
+## UI, localization, accessibility, and performance
 
-- Replaced the green-led visual identity with a rose / berry / plum system. Deep berry is used for accessible primary actions; vivid rose is the editorial accent; blush and white remain supporting surfaces.
-- Centralized primary, hover, active, soft, border, accent, surface, text, muted, focus, shadow, success, warning, danger, and info tokens in `src/app/globals.css`. Legacy emerald/teal utilities resolve through the pink token scale; semantic success remains green.
-- Preserved and refined the existing arch/pathway scholarship mark, updated the wordmark accent, and added the matching SVG app icon.
-- Improved English and Arabic heading weights, line-height, responsive scale, and RTL font handling. Added a localized skip-to-content link.
+- **Final source-level polish:** tightened hero vertical rhythm and headline scale, widened the desktop composition, reduced floating-card scale and orbit/grid dominance, improved chip contrast, adjusted tablet spotlight breakpoint, expanded wide-screen header spacing, and added drawer safe-area padding.
+- **Semantics:** removed nested link/button controls from the header, homepage CTAs, scholarship portal CTA, admin create links, and not-found action. Existing protected navigation/auth behavior was preserved.
+- **English LTR and Arabic RTL route smoke:** both locales returned expected responses across home, scholarships, countries, fields, guides, login, register, forgot-password, saved, profile, and admin login. Rendered locale containers reported `lang="en"/dir="ltr"` and `lang="ar"/dir="rtl"`; unauthenticated admin routes returned the protected login redirect.
+- **Empty production catalog:** anonymous queries are empty; public directories serve the real empty-state paths. No production fixture fallback was observed; the unseeded Chevening detail route returns 404.
+- **Pixel-level responsive signoff:** NOT COMPLETE. No screenshot review was performed at 360, 390, 430, 768, 1024, 1280, 1440, or 1920px in both locales. The live production preview was opened through a loopback-only SSH tunnel for user-side capture. Chrome DevTools MCP is unavailable, and no captures were returned to this session.
+- **Accessibility:** source review confirms focus-visible styles, keyboard drawer handling (Escape/focus trap/restoration), ARIA expanded state, labels, reduced-motion handling, and 44px key targets. Screenshot/keyboard/contrast-tree validation was not performed; do not treat this as full visual accessibility signoff.
+- **Performance:** production builds completed without the middleware deprecation warning. No browser performance trace/Core Web Vitals were recorded because Chrome DevTools MCP is unavailable; no material bundle/image regression was observed from the source/build review.
 
-### Homepage, navigation, search, and cards
+## Safety, backup, and remaining blockers
 
-- Simplified the hero composition and radial/grid/orbit treatment; the headline and search now lead the hierarchy, stats use a clean responsive grid, and phone layouts omit floating cards.
-- Hero scholarship spotlights now use actual published records from the repository; no hard-coded sample scholarship cards were added.
-- Reworked desktop navigation spacing and active states. Added a purpose-built mobile drawer with bilingual links, language switching, backdrop/Escape close, focus trapping/restoration, and scroll-lock compensation.
-- Standardized primary controls, focus rings, cards, funding/status badges, and scholarship-card scanning order. Cards link directly to official application portals.
-- Added branded empty states for scholarships, countries, fields, guides, and saved items without adding seed or fixture production content.
-
-### Auth, admin, and accessibility
-
-- Login, registration, forgot/reset password, profile, admin login, and admin shell use the shared token system. Supabase Auth and route-guard logic were not weakened; the demo credential fill is limited to development.
-- Admin remains a neutral, professional workspace; success/verified states use semantic green, while active navigation and focus use the pink brand.
-- Added/standardized visible keyboard focus, labels and input IDs, `aria` state for menus/filters/bookmarks, native checkbox controls, 44px minimum sizes for key controls, and reduced-motion handling.
-
-### Localization and responsive QA status
-
-- **English LTR route smoke**: `/en`, scholarships, countries, fields, guides, auth, saved/profile, and admin login returned expected HTTP responses; unknown scholarship and guide details returned 404.
-- **Arabic RTL route smoke**: equivalent `/ar` routes returned expected responses; rendered locale containers reported `lang="ar"` and `dir="rtl"`.
-- **Production empty states**: countries, fields, and guides empty-state copy was confirmed in both languages. Scholarships and saved empty branches are implemented, but their client-hydrated states were not pixel-captured after deployment.
-- **Desktop QA**: route rendering and build verified; no supplied screenshot was present for direct visual comparison.
-- **Mobile QA**: purpose-built layout and navigation implemented; manual device/viewport screenshots were not returned through the browser preview.
-- **Requested widths**: 360, 390, 430, 768, 1024, 1280, 1440, and 1920px are covered by responsive layout breakpoints, but the full pixel-level overflow/clip/overlap matrix remains pending screenshot review. The browser preview was opened for user-side capture; it does not return screenshots unless the user sends them.
-
-## 7. Seed and Remaining Blockers
-
-- **Live seed**: **NOT EXECUTED**. No production rows were written.
-- **Live seed idempotency**: **NOT YET VERIFIED**; seeding remains a separately controlled authorized Supabase administration step.
-- No service-role key was invented, requested in chat, or written to Git.
-- Remaining product-launch work: authorized production seed when approved; final client domain and Supabase Auth URLs; client-approved admin credentials; SMTP decision/configuration; and DNS/TLS/public Nginx cutover approval.
-- Remaining UI signoff: pixel-level review of 360, 390, 430, 768, 1024, 1280, 1440, and 1920px screenshots in both locales; the preview was opened, but no screenshot capture was returned for direct inspection.
-- DNS, SSL, Nginx, and unrelated production services were not changed.
-
----
-
-## 8. Completion and Safety
-
-- **Migration history parity and least-privilege live RLS**: 100% verified.
-- **Hardened source deployment and production smoke checks**: 100% verified.
-- **Brand/UI milestone**: Source commit `bdd673d2a28b50b2dffbe53d1f8b0a27ffe52c30` is deployed to release `20261005174013`; health/readiness, route smoke checks, PM2 cwd, and GitHub Actions run `37348114802` are verified.
-- **Visual signoff**: Responsive styles and bilingual route rendering are implemented; exact screenshot-based viewport QA remains pending user captures as recorded above.
-- **Overall client-deliverable project**: Backend hardening remains intact; production seed/domain/Auth/admin/SMTP/public-cutover approvals and screenshot signoff remain.
-- No duplicate migration remains.
-- No anonymous admin/helper privilege was granted.
-- No production seed or admin bootstrap was run.
-- No unrelated app, PostgreSQL service, Nginx configuration, DNS record, or SSL certificate was modified.
-- No secrets or administrator credentials are recorded in this file.
+- Only the two Grantly PM2 workers were removed/recreated during activation/rollback checks. `mohamy-phone-admin` remained online; no other PM2 app, PostgreSQL, Docker, unrelated `/var/www` project, Nginx site, DNS record, firewall rule, or SSL certificate was changed.
+- No Supabase backup/point-in-time recovery status is claimed; account/plan administration access was unavailable.
+- **Exact external inputs still required:**
+  1. Supabase administrative/service-role or Management API access through an approved secure channel, for seed, exact privileged counts, current Advisor/backup checks, Auth/Storage verification, and admin bootstrap.
+  2. Client-approved `ADMIN_EMAIL` and `ADMIN_PASSWORD`, injected securely (not in chat or Git).
+  3. Official client domain, canonical `www` policy, and authorized DNS control.
+  4. Supabase Auth Site/Redirect URLs for the approved domain and subdomains.
+  5. SMTP provider/configuration and a controlled delivery-test recipient, or an explicit client SMTP waiver.
+  6. Controlled QA student identity/account credentials for the production Golden Path.
+  7. Screenshot captures or a configured Chrome DevTools MCP for final responsive/visual/performance signoff.
+- **Completion:** 42% of the 24 strict launch acceptance checks are fully verified. This is not 100%; seed/idempotency/admin/golden paths/domain/Auth/SMTP/Nginx/DNS/HTTPS and screenshot signoff remain incomplete.
+- **STATUS files:** this root `STATUS.md` is the only status document; no secrets are recorded here.
