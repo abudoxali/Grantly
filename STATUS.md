@@ -13,7 +13,8 @@
 - **Branch**: `main`
 - **Verified remote base HEAD before this hardening pass**: `5c137c0fe824bafceed4df5a1aa85c1a197702c3`
 - **Secrets committed**: None
-- **Current hardening source commit / GitHub Actions result**: To be recorded after push and workflow verification.
+- **Hardening source commit**: `828e5865c8525e0a2c63d5cfe08f8f6dc7032d0e`
+- **GitHub Actions CI**: Run `37310810443` completed successfully for the hardening source commit.
 
 ---
 
@@ -124,7 +125,7 @@ Local checks completed for this source state:
 
 The build reports the existing Next.js middleware-convention deprecation warning; the production build succeeds. The full `npm ci` install also reported high advisories in the dev-inclusive dependency tree; no automatic dependency changes were made.
 
-**GitHub Actions for the hardening commit**: Pending push/workflow verification; result will be recorded after it completes.
+**GitHub Actions for the hardening commit**: Run `37310810443` completed successfully. A status-only follow-up commit will run the same workflow and will be verified before completion.
 
 ---
 
