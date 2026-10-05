@@ -16,11 +16,11 @@ module.exports = {
       exp_backoff_restart_delay: 100,
       env: {
         NODE_ENV: 'production',
-        PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
+        PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3300,
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3000,
+        PORT: process.env.PORT ? parseInt(process.env.PORT, 10) : 3300,
       },
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       error_file: './logs/pm2-error.log',
