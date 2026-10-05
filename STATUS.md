@@ -12,7 +12,7 @@
 - **Repository**: `https://github.com/abudoxali/Grantly.git`
 - **Branch**: `main`
 - **Expected remote HEAD at start of this pass**: `0c668003d2646d22b8c74ed3a567e67cc0ca3901`
-- **Deployed source SHA**: `891c5363902c177f325ab7bcd6d5eeee097369e4`
+- **Final application-source GitHub HEAD (deployed SHA)**: `891c5363902c177f325ab7bcd6d5eeee097369e4`
 - **GitHub Actions for deployed source**: Run `37317318093` completed successfully.
 - **Secrets committed**: None
 
