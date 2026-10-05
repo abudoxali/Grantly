@@ -174,32 +174,34 @@ export function ImageUpload({
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <div
+          <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-200 hover:border-emerald-500/60 rounded-2xl p-6 text-center cursor-pointer bg-slate-50/50 hover:bg-emerald-50/20 transition-all flex flex-col items-center justify-center gap-2 group"
+            className="group flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-background p-6 text-center transition-colors hover:border-primary-border hover:bg-primary-soft/40 focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={isArabic ? 'رفع صورة من جهازك' : 'Upload an image from your device'}
           >
-            <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-400 group-hover:text-emerald-600 group-hover:border-emerald-200 transition-colors shadow-2xs">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-muted shadow-2xs transition-colors group-hover:border-primary-border group-hover:text-primary">
               {uploading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <Upload className="w-5 h-5" />
+                <Upload className="h-5 w-5" />
               )}
-            </div>
-            <p className="text-xs font-semibold text-slate-700">
+            </span>
+            <span className="text-xs font-semibold text-text-primary">
               {isArabic ? 'انقر لرفع صورة من جهازك' : 'Click to upload image'}
-            </p>
-            <p className="text-[11px] text-slate-400">
+            </span>
+            <span className="text-[11px] text-muted">
               {isArabic
                 ? `الصيغ المدعومة: JPG, PNG, WebP (بحد أقصى ${maxSizeMB} ميجابايت)`
                 : `JPG, PNG, WebP up to ${maxSizeMB}MB`}
-            </p>
-          </div>
+            </span>
+          </button>
 
           <div className="flex items-center justify-between text-[11px]">
             <button
               type="button"
               onClick={() => setShowUrlField(!showUrlField)}
-              className="text-emerald-700 hover:underline font-semibold"
+              className="text-primary hover:underline font-semibold"
             >
               {showUrlField
                 ? isArabic ? 'إخفاء إدخال الرابط' : 'Hide direct URL input'
@@ -214,7 +216,7 @@ export function ImageUpload({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://example.com/image.jpg"
-                className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-hidden focus:border-emerald-600"
+                className="min-h-11 flex-1 rounded-xl border border-border px-3 py-2 text-sm focus:outline-hidden focus:border-primary"
               />
               <Button type="button" variant="outline" size="sm" onClick={handleApplyUrl}>
                 {isArabic ? 'تطبيق' : 'Apply'}

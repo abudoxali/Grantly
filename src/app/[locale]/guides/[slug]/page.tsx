@@ -95,7 +95,7 @@ export default async function LocalizedGuideDetailPage({
             </div>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-950 font-sans tracking-tight leading-[1.2]">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text-primary sm:text-5xl sm:leading-[1.25]">
             {title}
           </h1>
 

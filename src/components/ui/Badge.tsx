@@ -4,14 +4,14 @@ import { FundingType, ScholarshipStatus } from '@/lib/supabase/types';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?:
-    | 'default'
-    | 'funding'
-    | 'status'
-    | 'degree'
-    | 'outline'
-    | 'amber'
-    | 'emerald'
-    | 'sky';
+  | 'default'
+  | 'funding'
+  | 'status'
+  | 'degree'
+  | 'outline'
+  | 'amber'
+  | 'success'
+  | 'sky';
   size?: 'sm' | 'md' | 'lg';
   fundingType?: FundingType;
   status?: ScholarshipStatus;
@@ -38,24 +38,24 @@ export function Badge({
   if (fundingType) {
     switch (fundingType) {
       case 'Fully Funded':
-        styleClasses = 'bg-emerald-50 text-emerald-800 border-emerald-200/80 font-semibold';
+        styleClasses = 'bg-success-soft text-success-ink border-success-border font-semibold';
         break;
       case 'Partial Funding':
-        styleClasses = 'bg-amber-50 text-amber-900 border-amber-200/80 font-semibold';
+        styleClasses = 'bg-warning-soft text-warning-ink border-warning-border font-semibold';
         break;
       case 'Tuition Only':
-        styleClasses = 'bg-sky-50 text-sky-800 border-sky-200/80 font-semibold';
+        styleClasses = 'bg-info-soft text-info-ink border-info-border font-semibold';
         break;
     }
   } else if (status) {
     switch (status) {
       case 'Open':
-        styleClasses = 'bg-emerald-50 text-emerald-800 border-emerald-200/80 font-medium';
-        dotColor = 'bg-emerald-500 animate-pulse';
+        styleClasses = 'bg-success-soft text-success-ink border-success-border font-medium';
+        dotColor = 'bg-success animate-pulse';
         break;
       case 'Opening Soon':
         styleClasses = 'bg-amber-50 text-amber-900 border-amber-200/80 font-medium';
-        dotColor = 'bg-amber-500';
+        dotColor = 'bg-warning';
         break;
       case 'Closed':
         styleClasses = 'bg-slate-100 text-slate-600 border-slate-200 font-medium';
@@ -64,20 +64,20 @@ export function Badge({
     }
   } else {
     switch (variant) {
-      case 'emerald':
-        styleClasses = 'bg-emerald-50 text-emerald-800 border-emerald-200/80 font-semibold';
+      case 'success':
+        styleClasses = 'bg-success-soft text-success-ink border-success-border font-semibold';
         break;
       case 'sky':
-        styleClasses = 'bg-sky-50 text-sky-800 border-sky-200/80 font-semibold';
+        styleClasses = 'bg-info-soft text-info-ink border-info-border font-semibold';
         break;
       case 'amber':
-        styleClasses = 'bg-amber-50 text-amber-900 border-amber-200/80 font-semibold';
+        styleClasses = 'bg-warning-soft text-warning-ink border-warning-border font-semibold';
         break;
       case 'degree':
-        styleClasses = 'bg-indigo-50 text-indigo-700 border-indigo-200/70 font-medium';
+        styleClasses = 'bg-primary-soft text-primary border-primary-border font-medium';
         break;
       case 'outline':
-        styleClasses = 'bg-white text-slate-700 border-slate-200 hover:border-slate-300';
+        styleClasses = 'bg-white text-text-secondary border-border hover:border-primary-border';
         break;
       default:
         styleClasses = 'bg-slate-100 text-slate-800 border-slate-200/60 font-medium';

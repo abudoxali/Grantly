@@ -49,7 +49,7 @@ export default function AdminLayout({
   if (!user || !isAdmin) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-md">
+        <div className="card-surface w-full max-w-md p-8 text-center">
           <div className="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-4 border border-rose-100">
             <Lock className="w-7 h-7" />
           </div>
@@ -143,13 +143,13 @@ export default function AdminLayout({
         <div className="flex items-center gap-3">
           <LanguageSwitcher variant="minimal" />
           <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" />
             <span>{user.email}</span>
           </div>
           <Link
             href={`/${locale}`}
             target="_blank"
-            className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-emerald-700 p-2 rounded-lg hover:bg-slate-50"
+            className="hidden min-h-11 items-center gap-1 rounded-lg p-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-primary sm:inline-flex"
             title="Open Public Site"
           >
             <span>{locale === 'ar' ? 'الموقع العام' : 'Public Site'}</span>
@@ -158,7 +158,7 @@ export default function AdminLayout({
           <button
             type="button"
             onClick={() => logout()}
-            className="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-muted transition-colors hover:bg-danger-soft hover:text-danger"
             title={t.common.logout}
           >
             <LogOut className="w-4 h-4" />
@@ -181,10 +181,11 @@ export default function AdminLayout({
                 <Link
                   key={item.name}
                   href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-colors',
+                    'flex min-h-11 items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors',
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      ? 'bg-primary text-white shadow-2xs'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-950'
                   )}
                 >

@@ -139,9 +139,9 @@ export default function AdminScholarshipsPage() {
       </div>
 
       {showSavedAlert && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between shadow-2xs">
+        <div role="status" className="flex items-center justify-between rounded-xl border border-success-border bg-success-soft p-4 text-sm text-success-ink shadow-2xs">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
             <span className="font-bold">
               {isAr
                 ? 'تم حفظ بيانات المنحة الدراسية بنجاح وتحديث السجلات.'
@@ -160,7 +160,7 @@ export default function AdminScholarshipsPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={isAr ? 'البحث في المنح...' : 'Search scholarships...'}
-            className="w-full ps-10 pe-3 py-2 rounded-xl text-xs sm:text-sm border border-slate-200 bg-slate-50/60 focus:outline-hidden focus:bg-white focus:border-emerald-500"
+            className="min-h-11 w-full rounded-xl border border-border bg-background py-2 ps-10 pe-3 text-sm focus:bg-white focus:border-primary"
           />
         </div>
       </div>
@@ -198,7 +198,7 @@ export default function AdminScholarshipsPage() {
                     <td className="py-3.5 px-4 text-slate-600">
                       {sch.country?.flag} {isAr ? sch.country?.name_ar : sch.country?.name_en}
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-emerald-800">
+                    <td className="py-3.5 px-4 font-semibold text-text-secondary">
                       {sch.funding_type}
                     </td>
                     <td className="py-3.5 px-4 text-slate-500">
@@ -209,15 +209,15 @@ export default function AdminScholarshipsPage() {
                         type="button"
                         onClick={() => handleTogglePublish(sch)}
                         className={cn(
-                          'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors',
+                          'inline-flex min-h-11 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors',
                           sch.published
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            ? 'border border-success-border bg-success-soft text-success-ink'
                             : 'bg-slate-100 text-slate-500 border border-slate-200'
                         )}
                       >
                         {sch.published ? (
                           <>
-                            <Eye className="w-3 h-3 text-emerald-600" />
+                            <Eye className="h-3 w-3 text-success" />
                             <span>{isAr ? 'منشور' : 'Live'}</span>
                           </>
                         ) : (
@@ -247,7 +247,7 @@ export default function AdminScholarshipsPage() {
                       <div className="flex items-center justify-end gap-1.5">
                         <Link
                           href={`/${locale}/admin/scholarships/${sch.id}/edit`}
-                          className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-700 hover:bg-slate-100"
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-primary-soft hover:text-primary"
                           title="Edit"
                         >
                           <Edit2 className="w-3.5 h-3.5" />

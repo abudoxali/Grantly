@@ -35,10 +35,10 @@ export function HowGrantlyWorks() {
   ];
 
   return (
-    <section className="py-16 sm:py-20 bg-slate-50/50 border-b border-slate-200/80">
+    <section className="border-b border-border/70 bg-background py-14 sm:py-18 lg:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
             {t.home.howItWorksTitle}
           </h2>
           <p className="mt-3 text-sm sm:text-base text-slate-600">
@@ -52,10 +52,10 @@ export function HowGrantlyWorks() {
             return (
               <div
                 key={step.num}
-                className="relative flex flex-col p-6 bg-white rounded-2xl border border-slate-200 shadow-2xs"
+                className="card-surface relative flex flex-col p-6"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary font-semibold">
                     <Icon className="w-5 h-5" />
                   </div>
                   <span className="text-xs font-black text-slate-300">

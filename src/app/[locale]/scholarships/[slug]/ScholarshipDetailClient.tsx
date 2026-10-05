@@ -58,8 +58,10 @@ export function ScholarshipDetailClient({
         size="md"
         onClick={toggleBookmark}
         disabled={loading}
-        className={saved ? 'border-emerald-500 text-emerald-800 bg-emerald-50' : ''}
-        leftIcon={<Bookmark className={`w-4 h-4 ${saved ? 'fill-emerald-600' : ''}`} />}
+        aria-pressed={saved}
+        aria-busy={loading}
+        className={saved ? 'border-primary-border bg-primary-soft text-primary' : ''}
+        leftIcon={<Bookmark className={`h-4 w-4 ${saved ? 'fill-primary' : ''}`} />}
       >
         {saved ? t.common.removeSaved : t.common.saveScholarship}
       </Button>

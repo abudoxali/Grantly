@@ -9,6 +9,7 @@ import type { Bookmark } from '@/lib/supabase/types';
 import { ScholarshipCard } from '@/components/scholarships/ScholarshipCard';
 import { Bookmark as BookmarkIcon, ArrowRight, Compass } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function SavedScholarshipsPage() {
   const { locale, t } = useI18n();
@@ -47,9 +48,9 @@ export default function SavedScholarshipsPage() {
 
   if (!user) {
     return (
-      <div className="py-16 sm:py-24 bg-slate-50 min-h-screen flex items-center justify-center px-4">
-        <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-xs">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4 py-16 sm:py-24">
+        <div className="card-surface w-full max-w-md p-8 text-center">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary-border/70 bg-primary-soft text-primary">
             <BookmarkIcon className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">
@@ -75,14 +76,14 @@ export default function SavedScholarshipsPage() {
     .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
   return (
-    <div className="py-8 sm:py-12 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-background py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-10">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2">
             <BookmarkIcon className="w-3.5 h-3.5" />
             <span>{t.account.savedScholarshipsTitle}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             {t.account.savedScholarshipsTitle}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-slate-600">
@@ -91,26 +92,22 @@ export default function SavedScholarshipsPage() {
         </div>
 
         {validScholarships.length === 0 ? (
-          <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center max-w-lg mx-auto shadow-2xs">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
-              <Compass className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 mb-2">
-              {t.account.noSavedScholarships}
-            </h3>
-            <p className="text-xs sm:text-sm text-slate-500 mb-6 leading-relaxed">
-              {t.account.exploreAndSave}
-            </p>
-            <Link href={`/${locale}/scholarships`}>
-              <Button
-                variant="primary"
-                size="md"
-                rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}
-              >
-                {t.nav.findScholarships}
-              </Button>
-            </Link>
-          </div>
+          <EmptyState
+            icon={Compass}
+            title={t.account.noSavedScholarships}
+            description={t.account.exploreAndSave}
+            action={
+              <Link href={`/${locale}/scholarships`}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  rightIcon={<ArrowRight className="h-4 w-4 rtl:rotate-180" />}
+                >
+                  {t.nav.findScholarships}
+                </Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {validScholarships.map((s) => (

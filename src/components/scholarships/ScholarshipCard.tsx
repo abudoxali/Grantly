@@ -14,6 +14,7 @@ import {
   Bookmark,
   Coins,
   ArrowRight,
+  ExternalLink,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
@@ -92,133 +93,153 @@ export function ScholarshipCard({
     : null;
 
   return (
-    <div
+    <article
       className={cn(
-        'group relative flex flex-col bg-white rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all duration-200 overflow-hidden',
+        'card-surface card-interactive group flex h-full min-w-0 flex-col overflow-hidden',
         className
       )}
     >
       {/* Top Meta Bar */}
-      <div className="p-5 pb-3 flex items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Country with Flag */}
-          {scholarship.country && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100/90 text-xs font-semibold text-slate-700">
-              <span className="text-sm leading-none">{scholarship.country.flag}</span>
-              <span>{countryName}</span>
-            </span>
-          )}
-
-          {/* Funding Badge */}
-          <Badge
-            variant={
-              scholarship.funding_type === 'Fully Funded'
-                ? 'emerald'
-                : scholarship.funding_type === 'Partial Funding'
-                ? 'amber'
-                : 'sky'
-            }
-            size="sm"
-          >
-            {scholarship.funding_type === 'Fully Funded'
-              ? t.common.fullyFunded
-              : scholarship.funding_type === 'Partial Funding'
-              ? t.common.partialFunding
-              : t.common.tuitionOnly}
-          </Badge>
-        </div>
+      <div className="flex items-start justify-between gap-3 p-5 pb-0">
+        <Link
+          href={`/${locale}/scholarships/${scholarship.slug}`}
+          className="min-w-0 flex-1 rounded-md focus-visible:outline-none"
+        >
+          <h3 className="line-clamp-2 text-lg font-semibold leading-snug text-text-primary transition-colors group-hover:text-primary">
+            {title}
+          </h3>
+        </Link>
 
         {/* Bookmark Action */}
         <button
           type="button"
           onClick={toggleBookmark}
           disabled={saving}
+          aria-pressed={isCurrentSaved}
+          aria-busy={saving}
           className={cn(
-            'p-2 rounded-xl border transition-all cursor-pointer select-none shrink-0 focus:outline-hidden',
+            'inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border transition-colors focus:outline-hidden',
             saved
-              ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-              : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100'
+              ? 'border-primary-border bg-primary-soft text-primary'
+              : 'border-border bg-background text-muted hover:border-primary-border hover:bg-primary-soft hover:text-primary'
           )}
           title={saved ? t.common.removeSaved : t.common.saveScholarship}
           aria-label={saved ? t.common.removeSaved : t.common.saveScholarship}
         >
-          <Bookmark className={cn('w-4 h-4', saved && 'fill-emerald-600')} />
+          <Bookmark className={cn('h-4 w-4', saved && 'fill-primary')} />
         </button>
       </div>
 
-      {/* Main Title & Provider */}
-      <div className="px-5 flex-1 flex flex-col">
-        <Link
-          href={`/${locale}/scholarships/${scholarship.slug}`}
-          className="group-hover:text-emerald-700 transition-colors"
+      {/* Country with Flag */}
+      {(providerName || countryName) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-5 text-xs font-medium text-text-secondary">
+          {providerName && (
+            <span className="inline-flex min-w-0 items-center gap-1.5">
+              <Building className="h-3.5 w-3.5 shrink-0 text-muted" />
+              <span className="truncate">{providerName}</span>
+            </span>
+          )}
+          {scholarship.country && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="text-sm leading-none">{scholarship.country.flag}</span>
+              <span>{countryName}</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Funding Badge */}
+      <div className="mt-3 flex flex-wrap items-center gap-2 px-5">
+        <Badge
+          variant={
+            scholarship.funding_type === 'Fully Funded'
+              ? 'success'
+              : scholarship.funding_type === 'Partial Funding'
+                ? 'amber'
+                : 'sky'
+          }
+          size="sm"
         >
-          <h3 className="text-lg font-bold text-slate-900 leading-snug line-clamp-2">
-            {title}
-          </h3>
-        </Link>
-
-        {providerName && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5 font-medium line-clamp-1">
-            <Building className="w-3.5 h-3.5 shrink-0 text-slate-400" />
-            <span>{providerName}</span>
-          </div>
-        )}
-
-        {description && (
-          <p className="mt-2.5 text-xs text-slate-600 line-clamp-2 leading-relaxed">
-            {description}
-          </p>
-        )}
-
-        {/* Stipend Callout if available */}
+          {scholarship.funding_type === 'Fully Funded'
+            ? t.common.fullyFunded
+            : scholarship.funding_type === 'Partial Funding'
+              ? t.common.partialFunding
+              : t.common.tuitionOnly}
+        </Badge>
         {scholarship.stipend_amount && (
-          <div className="mt-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50/70 border border-emerald-100 text-xs font-bold text-emerald-800 self-start">
-            <Coins className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>{formatStipend(scholarship.stipend_amount, locale)}</span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary">
+            <Coins className="h-3.5 w-3.5 shrink-0" />
+            {formatStipend(scholarship.stipend_amount, locale)}
+          </span>
         )}
       </div>
 
-      {/* Degrees & Footer Details */}
-      <div className="px-5 pt-3 pb-4 mt-auto">
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {scholarship.degree_levels.map((lvl) => (
+      {/* Degree Levels & Supporting Details */}
+      <div className="flex flex-1 flex-col px-5 pb-5 pt-3">
+        {/* Degrees & Footer Details */}
+        <div className="flex flex-wrap gap-1.5">
+          {scholarship.degree_levels.map((level) => (
             <span
-              key={lvl}
-              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600"
+              key={level}
+              className="rounded-full bg-background px-2.5 py-1 text-[11px] font-medium text-text-secondary"
             >
-              {formatDegreeLevel(lvl, locale)}
+              {formatDegreeLevel(level, locale)}
             </span>
           ))}
         </div>
 
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        {description && (
+          <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-text-secondary">
+            {description}
+          </p>
+        )}
+
+        {/* Final Details and Apply Actions */}
+        <div className="mt-auto pt-4">
           {/* Deadline / Status */}
-          <div className="flex items-center gap-1.5 text-slate-500 font-medium">
-            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            {scholarship.deadline ? (
-              <span>
-                {formatDate(scholarship.deadline, locale)}
-                {deadlineInfo && deadlineInfo.days > 0 && deadlineInfo.days <= 60 && (
-                  <span className="ms-1.5 font-bold text-amber-700">
-                    ({deadlineInfo.days} {t.common.daysLeft})
-                  </span>
-                )}
-              </span>
-            ) : (
-              <span>{scholarship.status}</span>
-            )}
+          <div className="mb-3 flex items-center justify-between gap-3 border-t border-border/70 pt-3 text-xs">
+            <div className="flex min-w-0 items-center gap-1.5 text-text-secondary">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-muted" />
+              {scholarship.deadline ? (
+                <span className="truncate">
+                  {formatDate(scholarship.deadline, locale)}
+                  {deadlineInfo && deadlineInfo.days > 0 && deadlineInfo.days <= 60 && (
+                    <span className="ms-1.5 font-semibold text-warning-ink">
+                      ({deadlineInfo.days} {t.common.daysLeft})
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <Badge status={scholarship.status} size="sm">
+                  {scholarship.status === 'Open'
+                    ? t.common.open
+                    : scholarship.status === 'Opening Soon'
+                      ? t.common.openingSoon
+                      : t.common.closed}
+                </Badge>
+              )}
+            </div>
+            <Link
+              href={`/${locale}/scholarships/${scholarship.slug}`}
+              className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-lg px-2 text-xs font-semibold text-primary transition-colors hover:bg-primary-soft"
+            >
+              <span>{t.common.viewDetails}</span>
+              <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+            </Link>
           </div>
 
-          <Link
-            href={`/${locale}/scholarships/${scholarship.slug}`}
-            className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800 transition-colors group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+          <a
+            href={scholarship.official_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`${t.common.applyOfficial}: ${title}`}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-center text-xs font-semibold text-white transition-colors hover:bg-primary-hover active:bg-primary-active sm:text-sm"
           >
-            <span>{t.common.viewDetails}</span>
-            <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-          </Link>
+            <span>{t.common.applyOfficial}</span>
+            <ExternalLink className="h-4 w-4 shrink-0 rtl:rotate-180" />
+          </a>
         </div>
       </div>
-    </div>
+    </article>
   );
 }

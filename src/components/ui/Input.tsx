@@ -11,23 +11,23 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="relative w-full flex items-center">
         {leftIcon && (
-          <div className="absolute left-3.5 text-slate-400 pointer-events-none flex items-center justify-center">
+          <div className="absolute start-3.5 text-muted pointer-events-none flex items-center justify-center">
             {leftIcon}
           </div>
         )}
         <input
           type={type}
           className={cn(
-            'flex h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-emerald-500 focus:outline-none focus:ring-3 focus:ring-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs',
-            leftIcon && 'pl-11',
-            rightIcon && 'pr-11',
+            'flex min-h-11 w-full rounded-xl border border-border bg-white px-3.5 py-2 text-sm text-text-primary placeholder:text-muted transition-colors focus:border-primary focus:outline-none focus:ring-3 focus:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-50 shadow-xs',
+            leftIcon && 'ps-11',
+            rightIcon && 'pe-11',
             className
           )}
           ref={ref}
           {...props}
         />
         {rightIcon && (
-          <div className="absolute right-3.5 text-slate-400 flex items-center justify-center">
+          <div className="absolute end-3.5 text-muted flex items-center justify-center">
             {rightIcon}
           </div>
         )}

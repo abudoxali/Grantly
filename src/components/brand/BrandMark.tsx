@@ -4,18 +4,18 @@ import { cn } from '@/lib/utils';
 interface BrandMarkProps {
   className?: string;
   size?: number;
-  variant?: 'light' | 'dark' | 'emerald';
+  variant?: 'light' | 'dark' | 'primary';
 }
 
-export function BrandMark({ className, size = 32, variant = 'emerald' }: BrandMarkProps) {
+export function BrandMark({ className, size = 32, variant = 'primary' }: BrandMarkProps) {
   return (
     <div
       style={{ width: size, height: size }}
       className={cn(
         'relative inline-flex items-center justify-center rounded-xl transition-transform duration-200 select-none shrink-0',
-        variant === 'emerald' && 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20',
+        variant === 'primary' && 'bg-primary text-white shadow-sm shadow-primary/20',
         variant === 'dark' && 'bg-slate-900 text-white shadow-sm shadow-slate-900/10',
-        variant === 'light' && 'bg-white text-emerald-700 border border-slate-200 shadow-xs',
+        variant === 'light' && 'bg-white text-primary border border-border shadow-xs',
         className
       )}
     >
@@ -42,7 +42,7 @@ export function BrandMark({ className, size = 32, variant = 'emerald' }: BrandMa
           strokeLinecap="round"
         />
         {/* Radiant star / opportunity compass node */}
-        <circle cx="12" cy="7" r="1.75" fill="#F59E0B" />
+        <circle cx="12" cy="7" r="1.75" fill="var(--brand-accent)" />
       </svg>
     </div>
   );

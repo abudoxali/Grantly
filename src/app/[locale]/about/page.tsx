@@ -46,7 +46,7 @@ export default async function LocalizedAboutPage({ params }: AboutPageProps) {
           <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
             <Compass className="w-6 h-6 text-emerald-700" />
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text-primary sm:text-5xl">
             {isAr ? 'عن منصة جرانتلي' : 'About Grantly'}
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">

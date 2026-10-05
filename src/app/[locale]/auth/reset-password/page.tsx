@@ -70,11 +70,11 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="py-12 sm:py-20 bg-slate-50 min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:py-16">
+      <div className="card-surface w-full max-w-md p-6 sm:p-8 lg:p-10">
         <div className="text-center mb-8">
           <Logo size="md" className="justify-center mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 font-sans">
+          <h1 className="text-balance text-2xl font-semibold text-text-primary">
             {isAr ? 'إعادة تعيين كلمة المرور' : 'Create New Password'}
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-500">
@@ -85,22 +85,22 @@ export default function ResetPasswordPage() {
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+          <div role="alert" className="mb-6 flex items-start gap-2.5 rounded-xl border border-danger-border bg-danger-soft p-4 text-sm text-danger-ink">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
             <span>{error}</span>
           </div>
         )}
 
         {success ? (
-          <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-4">
-            <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+          <div role="status" className="space-y-4 rounded-2xl border border-success-border bg-success-soft p-6 text-center">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-success" />
             <div>
-              <p className="text-sm font-bold text-emerald-950 mb-1">
+              <p className="mb-1 text-sm font-semibold text-success-ink">
                 {isAr
                   ? 'تم تحديث كلمة المرور بنجاح!'
                   : 'Password updated successfully!'}
               </p>
-              <p className="text-xs text-emerald-800">
+              <p className="text-sm text-success-ink">
                 {isAr
                   ? 'يمكنك الآن تسجيل الدخول باستخدام كلمة المرور الجديدة.'
                   : 'You can now sign in using your new credentials.'}
@@ -117,23 +117,26 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="new-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 {isAr ? 'كلمة المرور الجديدة' : 'New Password'}
               </label>
               <div className="relative">
                 <Lock className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
+                  id="new-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full ps-10 pe-11 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 font-mono"
+                  className="min-h-11 w-full rounded-xl border border-border bg-white py-2.5 ps-10 pe-14 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 font-mono"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute end-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1"
+                  className="absolute end-1 top-1/2 inline-flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
+                  aria-label={showPassword ? (isAr ? 'إخفاء كلمة المرور' : 'Hide password') : (isAr ? 'إظهار كلمة المرور' : 'Show password')}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -141,18 +144,20 @@ export default function ResetPasswordPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="confirm-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 {t.auth.confirmPasswordLabel}
               </label>
               <div className="relative">
                 <Lock className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
+                  id="confirm-password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
                   required
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full ps-10 pe-11 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10 font-mono"
+                  className="min-h-11 w-full rounded-xl border border-border bg-white py-2.5 ps-10 pe-14 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 font-mono"
                 />
               </div>
             </div>

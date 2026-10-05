@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'emerald' | 'amber';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'success' | 'amber';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
@@ -26,28 +26,28 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none select-none active:scale-[0.98] cursor-pointer';
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none select-none active:scale-[0.99] cursor-pointer';
 
     const variants = {
       primary:
-        'bg-slate-900 text-white hover:bg-slate-800 shadow-sm shadow-slate-900/10 active:bg-slate-950',
+        'bg-primary text-white hover:bg-primary-hover active:bg-primary-active shadow-sm shadow-primary/20',
       secondary:
-        'bg-slate-100 text-slate-900 hover:bg-slate-200 active:bg-slate-300',
+        'bg-primary-soft text-text-primary hover:bg-primary-100 active:bg-primary-200',
       outline:
-        'border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100 shadow-xs',
+        'border border-border bg-white text-text-primary hover:bg-background hover:border-primary-border active:bg-primary-soft shadow-xs',
       ghost:
-        'text-slate-700 hover:bg-slate-100 hover:text-slate-900 active:bg-slate-200',
-      emerald:
-        'bg-emerald-600 text-white hover:bg-emerald-700 active:bg-emerald-800 shadow-sm shadow-emerald-600/20',
+        'text-text-secondary hover:bg-primary-soft hover:text-primary active:bg-primary-100',
+      success:
+        'bg-success-ink text-white hover:brightness-95 active:brightness-90 shadow-sm',
       amber:
-        'bg-amber-500 text-slate-950 hover:bg-amber-400 active:bg-amber-600 shadow-sm shadow-amber-500/20 font-semibold',
+        'bg-warning-ink text-white shadow-sm transition-all hover:brightness-95 active:brightness-90',
     };
 
     const sizes = {
-      sm: 'text-xs px-3 py-1.5 gap-1.5 h-8',
-      md: 'text-sm px-4 py-2.5 gap-2 h-10',
-      lg: 'text-base px-6 py-3 gap-2.5 h-12',
-      icon: 'h-10 w-10 p-0',
+      sm: 'text-xs px-3 py-2 gap-1.5 h-11 min-h-11',
+      md: 'text-sm px-4 py-2.5 gap-2 h-11 min-h-11',
+      lg: 'text-base px-6 py-3 gap-2.5 h-12 min-h-12',
+      icon: 'h-11 min-h-11 w-11 p-0',
     };
 
     return (

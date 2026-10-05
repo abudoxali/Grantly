@@ -53,9 +53,15 @@ export default async function LocaleLayout({
   return (
     <I18nProvider initialLocale={locale as Locale}>
       <AuthProvider>
-        <div dir={dir} lang={locale} className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+        <div dir={dir} lang={locale} className="min-h-screen flex flex-col bg-background text-text-primary">
+          <a
+            href="#main-content"
+            className="fixed start-3 top-3 z-[100] -translate-y-20 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition-transform focus:translate-y-0"
+          >
+            {locale === 'ar' ? 'انتقل إلى المحتوى' : 'Skip to content'}
+          </a>
           <Header />
-          <main className="flex-1 flex flex-col">{children}</main>
+          <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col outline-none">{children}</main>
           <Footer />
         </div>
       </AuthProvider>

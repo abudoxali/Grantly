@@ -104,15 +104,15 @@ export default async function LocalizedScholarshipDetailPage({
     : null;
 
   return (
-    <div className="py-8 sm:py-12 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-background py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-xs text-slate-500 mb-6 flex-wrap">
-          <Link href={`/${locale}`} className="hover:text-emerald-700">
+          <Link href={`/${locale}`} className="hover:text-primary">
             {t.common.home}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180 text-slate-400" />
-          <Link href={`/${locale}/scholarships`} className="hover:text-emerald-700">
+          <Link href={`/${locale}/scholarships`} className="hover:text-primary">
             {t.common.scholarships}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 rtl:rotate-180 text-slate-400" />
@@ -122,7 +122,7 @@ export default async function LocalizedScholarshipDetailPage({
         </nav>
 
         {/* Hero Header Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/90 p-6 sm:p-8 shadow-xs mb-8">
+        <div className="card-surface mb-8 p-6 sm:p-8">
           <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
             <div className="flex-1">
               {/* Badges */}
@@ -136,27 +136,27 @@ export default async function LocalizedScholarshipDetailPage({
                 <Badge
                   variant={
                     scholarship.funding_type === 'Fully Funded'
-                      ? 'emerald'
+                      ? 'success'
                       : scholarship.funding_type === 'Partial Funding'
-                      ? 'amber'
-                      : 'sky'
+                        ? 'amber'
+                        : 'sky'
                   }
                   size="md"
                 >
                   {scholarship.funding_type === 'Fully Funded'
                     ? t.common.fullyFunded
                     : scholarship.funding_type === 'Partial Funding'
-                    ? t.common.partialFunding
-                    : t.common.tuitionOnly}
+                      ? t.common.partialFunding
+                      : t.common.tuitionOnly}
                 </Badge>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-100">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="inline-flex items-center gap-1.5 rounded-lg border border-success-border bg-success-soft px-2.5 py-1 text-xs font-semibold text-success-ink">
+                  <ShieldCheck className="h-3.5 w-3.5 text-success" />
                   <span>{t.common.officialSource}</span>
                 </span>
               </div>
 
               {/* Title */}
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-950 font-sans tracking-tight leading-snug">
+              <h1 className="text-balance text-2xl font-semibold leading-snug tracking-tight text-text-primary sm:text-4xl">
                 {title}
               </h1>
 
@@ -179,7 +179,7 @@ export default async function LocalizedScholarshipDetailPage({
               <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                 {t.details.stipendLabel}
               </span>
-              <span className="text-sm sm:text-base font-extrabold text-emerald-800 mt-1 block">
+              <span className="mt-1 block text-sm font-semibold text-primary sm:text-base">
                 {formatStipend(scholarship.stipend_amount, loc)}
               </span>
             </div>
@@ -223,7 +223,7 @@ export default async function LocalizedScholarshipDetailPage({
           {/* Main 2-column Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* 1. Overview */}
-            <section className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-2xs">
+            <section className="card-surface p-6 sm:p-8">
               <h2 className="text-lg sm:text-xl font-bold text-slate-950 font-sans mb-4">
                 {t.details.overview}
               </h2>
@@ -234,9 +234,9 @@ export default async function LocalizedScholarshipDetailPage({
 
             {/* 2. Benefits Breakdown */}
             {scholarship.benefits && scholarship.benefits.length > 0 && (
-              <section className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-2xs">
+              <section className="card-surface p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <Coins className="w-5 h-5 text-emerald-600" />
+                  <Coins className="h-5 w-5 text-primary" />
                   <h2 className="text-lg sm:text-xl font-bold text-slate-950 font-sans">
                     {t.details.financialBenefits}
                   </h2>
@@ -248,9 +248,9 @@ export default async function LocalizedScholarshipDetailPage({
                     return (
                       <div
                         key={i}
-                        className="p-4 rounded-xl bg-emerald-50/50 border border-emerald-100 flex flex-col"
+                        className="flex flex-col rounded-xl border border-success-border bg-success-soft/60 p-4"
                       >
-                        <h4 className="text-sm font-bold text-emerald-950 mb-1">
+                        <h4 className="mb-1 text-sm font-semibold text-success-ink">
                           {bTitle}
                         </h4>
                         <p className="text-xs text-slate-600 leading-relaxed">
@@ -265,9 +265,9 @@ export default async function LocalizedScholarshipDetailPage({
 
             {/* 3. Eligibility Criteria */}
             {eligibilityList && eligibilityList.length > 0 && (
-              <section className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-2xs">
+              <section className="card-surface p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                  <CheckCircle2 className="h-5 w-5 text-success" />
                   <h2 className="text-lg sm:text-xl font-bold text-slate-950 font-sans">
                     {t.details.eligibilityCriteria}
                   </h2>
@@ -275,7 +275,7 @@ export default async function LocalizedScholarshipDetailPage({
                 <ul className="space-y-3">
                   {eligibilityList.map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mt-2 shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-success mt-2 shrink-0" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -285,9 +285,9 @@ export default async function LocalizedScholarshipDetailPage({
 
             {/* 4. Required Documents */}
             {documentsList && documentsList.length > 0 && (
-              <section className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-2xs">
+              <section className="card-surface p-6 sm:p-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-5 h-5 text-emerald-600" />
+                  <FileText className="h-5 w-5 text-primary" />
                   <h2 className="text-lg sm:text-xl font-bold text-slate-950 font-sans">
                     {t.details.requiredDocuments}
                   </h2>
@@ -306,7 +306,7 @@ export default async function LocalizedScholarshipDetailPage({
 
           {/* Sticky Sidebar Action Card */}
           <aside className="space-y-6">
-            <div className="sticky top-24 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+            <div className="sticky top-24 card-surface space-y-6 p-6">
               <div>
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   {t.details.applicationProcess}
@@ -326,7 +326,7 @@ export default async function LocalizedScholarshipDetailPage({
                 <Button
                   variant="primary"
                   size="lg"
-                  className="w-full justify-center text-sm font-bold h-12 shadow-sm shadow-emerald-700/20"
+                  className="w-full justify-center text-sm font-bold h-12 shadow-sm shadow-primary/20"
                   rightIcon={<ExternalLink className="w-4 h-4 rtl:rotate-180" />}
                 >
                   {t.details.proceedToOfficialPortal}

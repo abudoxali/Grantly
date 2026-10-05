@@ -204,7 +204,7 @@ export default async function AdminOverviewPage({ params }: AdminOverviewProps) 
                   </td>
                   <td className="py-3 px-4">
                     <Badge
-                      variant={sch.published ? 'emerald' : 'amber'}
+                      variant={sch.published ? 'success' : 'amber'}
                       size="sm"
                     >
                       {sch.published
@@ -212,8 +212,8 @@ export default async function AdminOverviewPage({ params }: AdminOverviewProps) 
                           ? 'منشورة'
                           : 'Published'
                         : isAr
-                        ? 'مسودة'
-                        : 'Draft'}
+                          ? 'مسودة'
+                          : 'Draft'}
                     </Badge>
                   </td>
                   <td className="py-3 px-4 text-end">

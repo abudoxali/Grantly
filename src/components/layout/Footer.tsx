@@ -17,7 +17,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-slate-900 text-slate-300 border-t border-slate-800 mt-auto">
+    <footer className="mt-auto border-t border-slate-800 bg-deep-plum text-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8">
           {/* Brand Col */}
@@ -30,8 +30,8 @@ export function Footer() {
                 : 'Your trusted gateway to global higher education. Grantly helps students worldwide discover fully funded scholarships and apply directly to official institution portals.'}
             </p>
 
-            <div className="flex items-center gap-2 pt-1 text-xs text-emerald-400 font-medium">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+            <div className="flex items-center gap-2 pt-1 text-xs font-medium text-success-soft">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-success-soft" />
               <span>{t.common.officialSource}</span>
             </div>
           </div>
@@ -45,7 +45,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {t.common.scholarships}
                 </Link>
@@ -53,7 +53,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/countries`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {t.common.countries}
                 </Link>
@@ -61,7 +61,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/fields`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {t.common.fields}
                 </Link>
@@ -69,7 +69,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/guides`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {t.common.guides}
                 </Link>
@@ -77,7 +77,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/about`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {t.common.about}
                 </Link>
@@ -94,7 +94,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?degree=Master`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {isAr ? 'منح الماجستير' : "Master's Scholarships"}
                 </Link>
@@ -102,7 +102,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?degree=PhD`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {isAr ? 'منح الدكتوراه والأبحاث' : 'PhD & Doctoral Grants'}
                 </Link>
@@ -110,7 +110,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?degree=Bachelor`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {isAr ? 'منح البكالوريوس' : "Bachelor's Scholarships"}
                 </Link>
@@ -118,7 +118,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?degree=Postdoctoral`}
-                  className="hover:text-emerald-400 transition-colors"
+                  className="hover:text-primary-200 transition-colors"
                 >
                   {isAr ? 'أبحاث ما بعد الدكتوراه' : 'Postdoctoral Research'}
                 </Link>
@@ -135,7 +135,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?country=United+Kingdom`}
-                  className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-primary-200 transition-colors inline-flex items-center gap-1.5"
                 >
                   <span>🇬🇧</span> {isAr ? 'المملكة المتحدة' : 'United Kingdom'}
                 </Link>
@@ -143,7 +143,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?country=Germany`}
-                  className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-primary-200 transition-colors inline-flex items-center gap-1.5"
                 >
                   <span>🇩🇪</span> {isAr ? 'ألمانيا' : 'Germany'}
                 </Link>
@@ -151,7 +151,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?country=United+States`}
-                  className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-primary-200 transition-colors inline-flex items-center gap-1.5"
                 >
                   <span>🇺🇸</span> {isAr ? 'الولايات المتحدة' : 'United States'}
                 </Link>
@@ -159,7 +159,7 @@ export function Footer() {
               <li>
                 <Link
                   href={`/${locale}/scholarships?country=Japan`}
-                  className="hover:text-emerald-400 transition-colors inline-flex items-center gap-1.5"
+                  className="hover:text-primary-200 transition-colors inline-flex items-center gap-1.5"
                 >
                   <span>🇯🇵</span> {isAr ? 'اليابان' : 'Japan'}
                 </Link>

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useI18n } from '@/i18n/context';
 import type {
@@ -20,7 +21,8 @@ import {
   Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { cn, formatDegreeLevel } from '@/lib/utils';
 
 type SortOption = 'deadline-asc' | 'deadline-desc' | 'popular' | 'newest';
 
@@ -63,6 +65,53 @@ export function ScholarshipsDirectory({
   const [sortBy, setSortBy] = React.useState<'deadline-asc' | 'deadline-desc' | 'popular' | 'newest'>('popular');
 
   const [mobileFiltersOpen, setMobileFiltersOpen] = React.useState(false);
+  const mobileFilterButtonRef = React.useRef<HTMLButtonElement>(null);
+  const mobileFilterPanelRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!mobileFiltersOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousPaddingInlineEnd = document.body.style.paddingInlineEnd;
+    const trigger = mobileFilterButtonRef.current;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileFiltersOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab' || !mobileFilterPanelRef.current) return;
+
+      const focusable = Array.from(
+        mobileFilterPanelRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href]'
+        )
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) document.body.style.paddingInlineEnd = `${scrollbarWidth}px`;
+    document.addEventListener('keydown', handleKeyDown);
+    requestAnimationFrame(() => {
+      mobileFilterPanelRef.current?.querySelector<HTMLElement>('button, input')?.focus();
+    });
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingInlineEnd = previousPaddingInlineEnd;
+      document.removeEventListener('keydown', handleKeyDown);
+      trigger?.focus();
+    };
+  }, [mobileFiltersOpen]);
 
   // Available options
   const degreeOptions: DegreeLevel[] = ['Bachelor', 'Master', 'PhD', 'Postdoctoral'];
@@ -213,11 +262,11 @@ export function ScholarshipsDirectory({
   };
 
   return (
-    <div className="py-8 sm:py-12 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-background py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Title Section */}
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             {t.scholarships.directoryTitle}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-3xl">
@@ -228,20 +277,25 @@ export function ScholarshipsDirectory({
         {/* Top Controls: Search Input + Sort + Mobile Filter Trigger */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-6 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-2xs">
           {/* Search Box */}
-          <div className="relative flex-1">
-            <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <div className="relative min-w-0 flex-1">
+            <label htmlFor="scholarship-directory-search" className="sr-only">
+              {t.scholarships.searchPlaceholder}
+            </label>
+            <Search className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
-              type="text"
+              id="scholarship-directory-search"
+              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={t.scholarships.searchPlaceholder}
-              className="w-full ps-10 pe-9 py-2 rounded-xl text-sm bg-slate-50/70 border border-slate-200 text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+              className="min-h-11 w-full rounded-xl border border-border bg-background py-2 ps-10 pe-11 text-sm text-text-primary placeholder:text-muted focus:bg-white focus:ring-2 focus:ring-primary/15"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute end-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label={isAr ? 'إزالة نص البحث' : 'Clear search'}
+                className="absolute end-1 top-1/2 inline-flex min-h-11 min-w-11 -translate-y-1/2 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -251,14 +305,17 @@ export function ScholarshipsDirectory({
           <div className="flex items-center gap-2">
             {/* Mobile Filter Button */}
             <button
+              ref={mobileFilterButtonRef}
               type="button"
               onClick={() => setMobileFiltersOpen(true)}
-              className="lg:hidden flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 shrink-0"
+              aria-expanded={mobileFiltersOpen}
+              aria-controls="mobile-scholarship-filters"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-primary-soft hover:text-primary lg:hidden"
             >
-              <SlidersHorizontal className="w-4 h-4 text-emerald-600" />
+              <SlidersHorizontal className="h-4 w-4 text-primary" />
               <span>{t.common.filters}</span>
               {hasActiveFilters && (
-                <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
+                <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
               )}
             </button>
 
@@ -266,9 +323,10 @@ export function ScholarshipsDirectory({
             <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium shrink-0">
               <span className="hidden sm:inline">{t.scholarships.sortBy}:</span>
               <select
+                aria-label={t.scholarships.sortBy}
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-emerald-500 cursor-pointer"
+                className="min-h-11 max-w-[65vw] cursor-pointer rounded-xl border border-border bg-white px-3 text-xs font-semibold text-text-primary focus:border-primary sm:max-w-none"
               >
                 <option value="popular">{t.scholarships.sortPopular}</option>
                 <option value="deadline-asc">{t.scholarships.sortDeadlineAsc}</option>
@@ -289,7 +347,8 @@ export function ScholarshipsDirectory({
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="hover:text-rose-600 ms-1"
+                  aria-label={isAr ? 'إزالة نص البحث' : 'Remove search query'}
+                  className="ms-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -298,13 +357,14 @@ export function ScholarshipsDirectory({
             {selectedDegrees.map((deg) => (
               <span
                 key={deg}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium"
+                className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-primary-border bg-primary-soft px-2.5 py-1 text-primary font-medium"
               >
-                <span>{deg}</span>
+                <span>{formatDegreeLevel(deg, locale)}</span>
                 <button
                   type="button"
                   onClick={() => toggleDegree(deg)}
-                  className="hover:text-rose-600 ms-1"
+                  aria-label={isAr ? 'إزالة تصفية المرحلة الدراسية' : 'Remove degree filter'}
+                  className="ms-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -313,13 +373,20 @@ export function ScholarshipsDirectory({
             {selectedFunding.map((fund) => (
               <span
                 key={fund}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-800 font-medium"
+                className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-primary-border bg-primary-soft px-2.5 py-1 text-primary font-medium"
               >
-                <span>{fund}</span>
+                <span>
+                  {fund === 'Fully Funded'
+                    ? t.common.fullyFunded
+                    : fund === 'Partial Funding'
+                      ? t.common.partialFunding
+                      : t.common.tuitionOnly}
+                </span>
                 <button
                   type="button"
                   onClick={() => toggleFunding(fund)}
-                  className="hover:text-rose-600 ms-1"
+                  aria-label={isAr ? 'إزالة تصفية التمويل' : 'Remove funding filter'}
+                  className="ms-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -330,11 +397,14 @@ export function ScholarshipsDirectory({
                 key={c}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-800 font-medium"
               >
-                <span>{c}</span>
+                <span>
+                  {isAr ? countries.find((country) => country.name_en === c)?.name_ar || c : c}
+                </span>
                 <button
                   type="button"
                   onClick={() => toggleCountry(c)}
-                  className="hover:text-rose-600 ms-1"
+                  aria-label={isAr ? 'إزالة تصفية الدولة' : 'Remove country filter'}
+                  className="ms-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -345,11 +415,12 @@ export function ScholarshipsDirectory({
                 key={st}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-800 font-medium"
               >
-                <span>{st}</span>
+                <span>{st === 'Open' ? t.common.open : t.common.openingSoon}</span>
                 <button
                   type="button"
                   onClick={() => toggleStatus(st)}
-                  className="hover:text-rose-600 ms-1"
+                  aria-label={isAr ? 'إزالة تصفية الحالة' : 'Remove status filter'}
+                  className="ms-1 inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-muted transition-colors hover:bg-primary-soft hover:text-primary"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -358,7 +429,7 @@ export function ScholarshipsDirectory({
             <button
               type="button"
               onClick={resetAllFilters}
-              className="text-xs font-semibold text-rose-600 hover:underline ms-2"
+              className="inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
             >
               {t.scholarships.clearAll}
             </button>
@@ -376,7 +447,7 @@ export function ScholarshipsDirectory({
                   <button
                     type="button"
                     onClick={resetAllFilters}
-                    className="text-xs text-slate-500 hover:text-emerald-700 flex items-center gap-1"
+                    className="text-xs text-slate-500 hover:text-primary flex items-center gap-1"
                   >
                     <RotateCcw className="w-3 h-3" />
                     <span>{t.scholarships.clearAll}</span>
@@ -386,44 +457,39 @@ export function ScholarshipsDirectory({
 
               {/* Degrees */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByDegree}
                 </h4>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {degreeOptions.map((deg) => {
                     const checked = selectedDegrees.includes(deg);
                     return (
                       <label
                         key={deg}
-                        onClick={() => toggleDegree(deg)}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-950 cursor-pointer select-none py-1"
+                        className="flex min-h-11 cursor-pointer select-none items-center gap-2.5 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded-md border flex items-center justify-center transition-colors',
-                            checked
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          )}
-                        >
-                          {checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleDegree(deg)}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
                         <span>
                           {deg === 'Master'
                             ? isAr
                               ? 'ماجستير'
                               : 'Master'
                             : deg === 'PhD'
-                            ? isAr
-                              ? 'دكتوراه'
-                              : 'PhD'
-                            : deg === 'Bachelor'
-                            ? isAr
-                              ? 'بكالوريوس'
-                              : 'Bachelor'
-                            : isAr
-                            ? 'أبحاث ما بعد الدكتوراه'
-                            : 'Postdoc'}
+                              ? isAr
+                                ? 'دكتوراه'
+                                : 'PhD'
+                              : deg === 'Bachelor'
+                                ? isAr
+                                  ? 'بكالوريوس'
+                                  : 'Bachelor'
+                                : isAr
+                                  ? 'أبحاث ما بعد الدكتوراه'
+                                  : 'Postdoc'}
                         </span>
                       </label>
                     );
@@ -432,35 +498,30 @@ export function ScholarshipsDirectory({
               </div>
 
               {/* Funding Type */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+              <div className="border-t border-border/70 pt-4">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByFunding}
                 </h4>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {fundingOptions.map((fund) => {
                     const checked = selectedFunding.includes(fund);
                     return (
                       <label
                         key={fund}
-                        onClick={() => toggleFunding(fund)}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-950 cursor-pointer select-none py-1"
+                        className="flex min-h-11 cursor-pointer select-none items-center gap-2.5 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded-md border flex items-center justify-center transition-colors',
-                            checked
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          )}
-                        >
-                          {checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleFunding(fund)}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
                         <span>
                           {fund === 'Fully Funded'
                             ? t.common.fullyFunded
                             : fund === 'Partial Funding'
-                            ? t.common.partialFunding
-                            : t.common.tuitionOnly}
+                              ? t.common.partialFunding
+                              : t.common.tuitionOnly}
                         </span>
                       </label>
                     );
@@ -469,30 +530,25 @@ export function ScholarshipsDirectory({
               </div>
 
               {/* Countries */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+              <div className="border-t border-border/70 pt-4">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByCountry}
                 </h4>
-                <div className="space-y-1.5 max-h-52 overflow-y-auto pe-1">
+                <div className="max-h-52 space-y-1 overflow-y-auto pe-1">
                   {countries.map((c) => {
                     const checked = selectedCountries.includes(c.name_en);
                     const name = isAr ? c.name_ar : c.name_en;
                     return (
                       <label
                         key={c.id}
-                        onClick={() => toggleCountry(c.name_en)}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-950 cursor-pointer select-none py-1"
+                        className="flex min-h-11 cursor-pointer select-none items-center gap-2.5 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0',
-                            checked
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          )}
-                        >
-                          {checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleCountry(c.name_en)}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
                         <span className="truncate">
                           {c.flag} {name}
                         </span>
@@ -503,30 +559,25 @@ export function ScholarshipsDirectory({
               </div>
 
               {/* Fields of Study */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+              <div className="border-t border-border/70 pt-4">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {isAr ? 'التخصص الأكاديمي' : 'Field of Study'}
                 </h4>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto pe-1">
+                <div className="max-h-48 space-y-1 overflow-y-auto pe-1">
                   {fields.map((f) => {
                     const checked = selectedFields.includes(f.name_en);
                     const name = isAr ? f.name_ar : f.name_en;
                     return (
                       <label
                         key={f.id}
-                        onClick={() => toggleField(f.name_en)}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-950 cursor-pointer select-none py-1"
+                        className="flex min-h-11 cursor-pointer select-none items-center gap-2.5 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded-md border flex items-center justify-center transition-colors shrink-0',
-                            checked
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          )}
-                        >
-                          {checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleField(f.name_en)}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
                         <span className="truncate">{name}</span>
                       </label>
                     );
@@ -535,32 +586,25 @@ export function ScholarshipsDirectory({
               </div>
 
               {/* Application Status */}
-              <div className="pt-4 border-t border-slate-100">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+              <div className="border-t border-border/70 pt-4">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByStatus}
                 </h4>
-                <div className="space-y-1.5">
-                  {statusOptions.map((st) => {
-                    const checked = selectedStatuses.includes(st);
+                <div className="space-y-1">
+                  {statusOptions.map((status) => {
+                    const checked = selectedStatuses.includes(status);
                     return (
                       <label
-                        key={st}
-                        onClick={() => toggleStatus(st)}
-                        className="flex items-center gap-2.5 text-xs text-slate-700 hover:text-slate-950 cursor-pointer select-none py-1"
+                        key={status}
+                        className="flex min-h-11 cursor-pointer select-none items-center gap-2.5 py-2 text-sm text-text-secondary transition-colors hover:text-text-primary"
                       >
-                        <div
-                          className={cn(
-                            'w-4 h-4 rounded-md border flex items-center justify-center transition-colors',
-                            checked
-                              ? 'bg-emerald-600 border-emerald-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          )}
-                        >
-                          {checked && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                        <span>
-                          {st === 'Open' ? t.common.open : t.common.openingSoon}
-                        </span>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleStatus(status)}
+                          className="h-4 w-4 shrink-0 accent-primary"
+                        />
+                        <span>{status === 'Open' ? t.common.open : t.common.openingSoon}</span>
                       </label>
                     );
                   })}
@@ -572,9 +616,9 @@ export function ScholarshipsDirectory({
           {/* Cards Grid */}
           <div className="lg:col-span-3">
             {/* Results Count */}
-            <div className="mb-4 flex items-center justify-between text-xs text-slate-500 font-medium">
+            <div className="mb-4 flex items-center justify-between text-xs font-medium text-text-secondary">
               <span>
-                <strong className="text-slate-900 font-bold">
+                <strong className="font-semibold text-text-primary">
                   {sortedScholarships.length}
                 </strong>{' '}
                 {t.scholarships.resultsFound}
@@ -583,22 +627,33 @@ export function ScholarshipsDirectory({
 
             {/* Empty State */}
             {sortedScholarships.length === 0 ? (
-              <div className="text-center py-16 px-4 bg-white rounded-2xl border border-slate-200">
-                <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-6 h-6" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {t.scholarships.emptyTitle}
-                </h3>
-                <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-sm mx-auto">
-                  {t.scholarships.emptyDesc}
-                </p>
-                <div className="mt-6">
-                  <Button variant="outline" size="sm" onClick={resetAllFilters}>
-                    {t.common.resetFilters}
-                  </Button>
-                </div>
-              </div>
+              <EmptyState
+                icon={Search}
+                title={
+                  initialScholarships.length === 0
+                    ? isAr ? 'المنح الدراسية قيد الإعداد' : 'The scholarship directory is being prepared'
+                    : t.scholarships.emptyTitle
+                }
+                description={
+                  initialScholarships.length === 0
+                    ? isAr ? 'ستظهر المنح هنا بعد التحقق من شروطها وروابط التقديم الرسمية.' : 'Verified scholarships will appear here once their requirements and official application links are reviewed.'
+                    : t.scholarships.emptyDesc
+                }
+                action={
+                  initialScholarships.length === 0 ? (
+                    <Link
+                      href={`/${locale}/guides`}
+                      className="inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+                    >
+                      {isAr ? 'تصفّح أدلة التقديم' : 'Explore application guides'}
+                    </Link>
+                  ) : (
+                    <Button variant="outline" size="sm" onClick={resetAllFilters}>
+                      {t.common.resetFilters}
+                    </Button>
+                  )
+                }
+              />
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {sortedScholarships.map((sch) => (
@@ -612,43 +667,61 @@ export function ScholarshipsDirectory({
 
       {/* Mobile Drawer Modal for Filters */}
       {mobileFiltersOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-200">
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileFiltersOpen(false)}
+            className="absolute inset-0 bg-deep-plum/40 backdrop-blur-sm"
+            aria-label={isAr ? 'إغلاق خيارات التصفية' : 'Close filters'}
+          />
+          <div
+            ref={mobileFilterPanelRef}
+            id="mobile-scholarship-filters"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-filter-heading"
+            className="mobile-drawer-enter absolute inset-x-0 bottom-0 z-10 flex max-h-[90dvh] flex-col rounded-t-3xl bg-white shadow-2xl"
+          >
             {/* Modal Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <span className="text-base font-bold text-slate-900">{t.common.filters}</span>
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
+              <h2 id="mobile-filter-heading" className="text-base font-semibold text-text-primary">
+                {t.common.filters}
+              </h2>
               <button
                 type="button"
                 onClick={() => setMobileFiltersOpen(false)}
-                className="p-1 rounded-lg text-slate-500 hover:bg-slate-100"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-text-secondary transition-colors hover:bg-primary-soft hover:text-primary"
+                aria-label={isAr ? 'إغلاق خيارات التصفية' : 'Close filters'}
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-6 flex-1">
+            <div className="flex-1 space-y-6 overflow-y-auto p-5">
               {/* Degrees */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByDegree}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {degreeOptions.map((deg) => {
-                    const checked = selectedDegrees.includes(deg);
+                  {degreeOptions.map((degree) => {
+                    const checked = selectedDegrees.includes(degree);
                     return (
                       <button
-                        key={deg}
+                        key={degree}
                         type="button"
-                        onClick={() => toggleDegree(deg)}
+                        aria-pressed={checked}
+                        onClick={() => toggleDegree(degree)}
                         className={cn(
-                          'p-2.5 rounded-xl border text-xs font-medium text-start transition-colors',
+                          'flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-start text-sm font-medium transition-colors',
                           checked
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold'
-                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                            ? 'border-primary-border bg-primary-soft text-primary'
+                            : 'border-border bg-white text-text-secondary hover:bg-background'
                         )}
                       >
-                        {deg}
+                        <span>{formatDegreeLevel(degree, locale)}</span>
+                        {checked && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     );
                   })}
@@ -657,25 +730,33 @@ export function ScholarshipsDirectory({
 
               {/* Funding Type */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByFunding}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {fundingOptions.map((fund) => {
-                    const checked = selectedFunding.includes(fund);
+                  {fundingOptions.map((funding) => {
+                    const checked = selectedFunding.includes(funding);
                     return (
                       <button
-                        key={fund}
+                        key={funding}
                         type="button"
-                        onClick={() => toggleFunding(fund)}
+                        aria-pressed={checked}
+                        onClick={() => toggleFunding(funding)}
                         className={cn(
-                          'p-2.5 rounded-xl border text-xs font-medium text-start transition-colors',
+                          'flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-start text-sm font-medium transition-colors',
                           checked
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold'
-                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                            ? 'border-primary-border bg-primary-soft text-primary'
+                            : 'border-border bg-white text-text-secondary hover:bg-background'
                         )}
                       >
-                        {fund}
+                        <span>
+                          {funding === 'Fully Funded'
+                            ? t.common.fullyFunded
+                            : funding === 'Partial Funding'
+                              ? t.common.partialFunding
+                              : t.common.tuitionOnly}
+                        </span>
+                        {checked && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     );
                   })}
@@ -684,26 +765,28 @@ export function ScholarshipsDirectory({
 
               {/* Countries */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {t.scholarships.filterByCountry}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {countries.map((c) => {
-                    const checked = selectedCountries.includes(c.name_en);
-                    const name = isAr ? c.name_ar : c.name_en;
+                  {countries.map((country) => {
+                    const checked = selectedCountries.includes(country.name_en);
+                    const name = isAr ? country.name_ar : country.name_en;
                     return (
                       <button
-                        key={c.id}
+                        key={country.id}
                         type="button"
-                        onClick={() => toggleCountry(c.name_en)}
+                        aria-pressed={checked}
+                        onClick={() => toggleCountry(country.name_en)}
                         className={cn(
-                          'p-2 rounded-xl border text-xs font-medium text-start truncate transition-colors',
+                          'flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-start text-sm font-medium transition-colors',
                           checked
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold'
-                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                            ? 'border-primary-border bg-primary-soft text-primary'
+                            : 'border-border bg-white text-text-secondary hover:bg-background'
                         )}
                       >
-                        {c.flag} {name}
+                        <span className="truncate">{country.flag} {name}</span>
+                        {checked && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     );
                   })}
@@ -712,26 +795,56 @@ export function ScholarshipsDirectory({
 
               {/* Fields of Study */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
                   {isAr ? 'التخصص الأكاديمي' : 'Field of Study'}
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
-                  {fields.map((f) => {
-                    const checked = selectedFields.includes(f.name_en);
-                    const name = isAr ? f.name_ar : f.name_en;
+                  {fields.map((field) => {
+                    const checked = selectedFields.includes(field.name_en);
+                    const name = isAr ? field.name_ar : field.name_en;
                     return (
                       <button
-                        key={f.id}
+                        key={field.id}
                         type="button"
-                        onClick={() => toggleField(f.name_en)}
+                        aria-pressed={checked}
+                        onClick={() => toggleField(field.name_en)}
                         className={cn(
-                          'p-2 rounded-xl border text-xs font-medium text-start truncate transition-colors',
+                          'flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-start text-sm font-medium transition-colors',
                           checked
-                            ? 'bg-emerald-50 border-emerald-500 text-emerald-800 font-bold'
-                            : 'bg-slate-50 border-slate-200 text-slate-700'
+                            ? 'border-primary-border bg-primary-soft text-primary'
+                            : 'border-border bg-white text-text-secondary hover:bg-background'
                         )}
                       >
-                        {name}
+                        <span className="truncate">{name}</span>
+                        {checked && <Check className="h-4 w-4 shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-text-secondary">
+                  {t.scholarships.filterByStatus}
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {statusOptions.map((status) => {
+                    const checked = selectedStatuses.includes(status);
+                    return (
+                      <button
+                        key={status}
+                        type="button"
+                        aria-pressed={checked}
+                        onClick={() => toggleStatus(status)}
+                        className={cn(
+                          'flex min-h-11 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-start text-sm font-medium transition-colors',
+                          checked
+                            ? 'border-primary-border bg-primary-soft text-primary'
+                            : 'border-border bg-white text-text-secondary hover:bg-background'
+                        )}
+                      >
+                        <span>{status === 'Open' ? t.common.open : t.common.openingSoon}</span>
+                        {checked && <Check className="h-4 w-4 shrink-0" />}
                       </button>
                     );
                   })}
@@ -740,7 +853,7 @@ export function ScholarshipsDirectory({
             </div>
 
             {/* Modal Footer Actions */}
-            <div className="p-4 border-t border-slate-100 flex items-center gap-3">
+            <div className="flex items-center gap-3 border-t border-border bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <Button
                 variant="outline"
                 size="md"

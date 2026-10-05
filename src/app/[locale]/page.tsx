@@ -48,6 +48,7 @@ export default async function LocalizedHomePage({ params }: HomePageProps) {
           scholarshipCount: scholarships.length,
           countryCount: countries.length,
         }}
+        spotlightScholarships={displayScholarships.slice(0, 2)}
       />
       <FeaturedScholarships scholarships={displayScholarships} />
       <ExploreByDegree />

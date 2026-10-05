@@ -10,26 +10,26 @@ export function FinalCTA() {
   const { locale, t } = useI18n();
 
   return (
-    <section className="py-20 sm:py-24 bg-gradient-to-br from-emerald-900 via-slate-900 to-slate-950 text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-800/25 via-transparent to-transparent pointer-events-none" />
+    <section className="relative overflow-hidden bg-gradient-to-br from-primary-900 via-deep-plum to-slate-950 py-16 text-white sm:py-20">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/20 via-transparent to-transparent" />
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-slate-950 flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
+        <div className="mx-auto mb-6 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-primary-soft text-primary shadow-lg shadow-black/10">
           <Compass className="w-6 h-6" />
         </div>
 
-        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight font-sans text-balance">
+        <h2 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
           {t.home.ctaTitle}
         </h2>
 
-        <p className="mt-4 text-base sm:text-lg text-emerald-100/90 max-w-2xl mx-auto leading-relaxed">
+        <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-primary-100 sm:text-lg">
           {t.home.ctaDesc}
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href={`/${locale}/scholarships`}>
             <Button
-              variant="amber"
+              variant="primary"
               size="lg"
               rightIcon={<ArrowRight className="w-4 h-4 rtl:rotate-180" />}
               className="w-full sm:w-auto h-12 px-8 font-bold"

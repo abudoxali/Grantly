@@ -34,11 +34,11 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="py-12 sm:py-20 bg-slate-50 min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-md bg-white rounded-3xl border border-slate-200 p-8 sm:p-10 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10 sm:py-16">
+      <div className="card-surface w-full max-w-md p-6 sm:p-8 lg:p-10">
         <div className="text-center mb-8">
           <Logo size="md" className="justify-center mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 font-sans">
+          <h1 className="text-balance text-2xl font-semibold text-text-primary">
             {t.auth.resetPassword}
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-500">
@@ -49,9 +49,9 @@ export default function ForgotPasswordPage() {
         </div>
 
         {sent ? (
-          <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
-            <CheckCircle2 className="w-8 h-8 text-emerald-600 mx-auto" />
-            <p className="text-xs sm:text-sm font-semibold text-emerald-950">
+          <div role="status" className="space-y-3 rounded-2xl border border-success-border bg-success-soft p-5 text-center">
+            <CheckCircle2 className="mx-auto h-8 w-8 text-success" />
+            <p className="text-sm font-semibold text-success-ink">
               {locale === 'ar'
                 ? 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.'
                 : 'A password reset link has been dispatched to your email address.'}
@@ -67,18 +67,20 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label htmlFor="forgot-password-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-text-secondary">
                 {t.auth.emailLabel}
               </label>
               <div className="relative">
                 <Mail className="absolute start-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
+                  id="forgot-password-email"
                   type="email"
+                  autoComplete="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@example.com"
-                  className="w-full ps-10 pe-3 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/10"
+                  className="min-h-11 w-full rounded-xl border border-border bg-white py-2.5 ps-10 pe-3 text-sm text-text-primary placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15"
                 />
               </div>
             </div>
@@ -101,9 +103,10 @@ export default function ForgotPasswordPage() {
         <div className="mt-8 pt-6 border-t border-slate-100 text-center text-xs">
           <Link
             href={`/${locale}/auth/login`}
-            className="font-bold text-emerald-700 hover:underline"
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 font-semibold text-primary transition-colors hover:bg-primary-soft"
           >
-            ← {t.common.login}
+            <ArrowRight className="h-4 w-4 rotate-180 rtl:rotate-0" />
+            <span>{t.common.login}</span>
           </Link>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
-  markVariant?: 'light' | 'dark' | 'emerald';
+  markVariant?: 'light' | 'dark' | 'primary';
   showSubtitle?: boolean;
   theme?: 'light' | 'dark';
   href?: string;
@@ -19,7 +19,7 @@ interface LogoProps {
 export function Logo({
   className,
   size = 'md',
-  markVariant = 'emerald',
+  markVariant = 'primary',
   showSubtitle = true,
   theme = 'light',
   href,
@@ -47,14 +47,14 @@ export function Logo({
         <div className="flex items-baseline gap-1">
           <span
             className={cn(
-              'font-extrabold tracking-tight font-sans leading-none',
+              'font-bold tracking-tight font-sans leading-none',
               textClasses[size],
               theme === 'light' ? 'text-slate-900' : 'text-white'
             )}
           >
             {isArabic ? 'جرانتلي' : 'Grantly'}
           </span>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 shrink-0 inline-block mb-0.5" />
+          <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0 inline-block mb-0.5" />
         </div>
         {showSubtitle && (
           <span
@@ -76,14 +76,14 @@ export function Logo({
 
   if (href) {
     return (
-      <Link href={href} className="focus:outline-hidden" aria-label="Grantly Home">
+      <Link href={href} className="focus:outline-hidden" aria-label={isArabic ? 'الصفحة الرئيسية لجرانتلي' : 'Grantly Home'}>
         {content}
       </Link>
     );
   }
 
   return (
-    <Link href={`/${locale}`} className="focus:outline-hidden" aria-label="Grantly Home">
+    <Link href={`/${locale}`} className="focus:outline-hidden" aria-label={isArabic ? 'الصفحة الرئيسية لجرانتلي' : 'Grantly Home'}>
       {content}
     </Link>
   );

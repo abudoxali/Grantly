@@ -36,6 +36,7 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'Grantly Editorial Team' }],
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  icons: { icon: [{ url: '/icon.svg', type: 'image/svg+xml', sizes: 'any' }] },
   openGraph: {
     title: 'Grantly — Verified Global Scholarships',
     description: 'Find verified global scholarships and official application portals with zero intermediary fees.',
@@ -52,10 +53,11 @@ export default function RootLayout({
 }) {
   return (
     <html
+      lang="en"
       className={`h-full antialiased ${ibmPlexArabic.variable} ${plusJakarta.variable}`}
       data-scroll-behavior="smooth"
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-emerald-600 selection:text-white">
+      <body className="min-h-full flex flex-col bg-background text-text-primary font-sans selection:bg-primary-soft selection:text-text-primary">
         {children}
       </body>
     </html>

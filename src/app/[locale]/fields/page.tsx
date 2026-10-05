@@ -17,6 +17,7 @@ import {
   BookOpen,
   ArrowRight,
 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 interface FieldsPageProps {
   params: Promise<{ locale: string }>;
@@ -64,14 +65,14 @@ export default async function LocalizedFieldsPage({ params }: FieldsPageProps) {
   const fields = await getFields();
 
   return (
-    <div className="py-8 sm:py-12 bg-slate-50 min-h-screen">
+    <div className="min-h-screen bg-background py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mb-10">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2">
+          <div className="mb-2 inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-primary">
             <BookOpen className="w-3.5 h-3.5" />
             <span>{t.home.popularFieldsTitle}</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">
             {isAr ? 'التخصصات والمجالات العلمية' : 'Academic Disciplines & Fields'}
           </h1>
           <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed">
@@ -81,42 +82,56 @@ export default async function LocalizedFieldsPage({ params }: FieldsPageProps) {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {fields.map((field) => {
-            const Icon = ICON_MAP[field.icon] || BookOpen;
-            const name = isAr ? field.name_ar : field.name_en;
-            const desc = isAr ? field.description_ar : field.description_en;
-
-            return (
-              <div
-                key={field.id}
-                className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs hover:shadow-md hover:border-slate-300 transition-all flex flex-col"
+        {fields.length === 0 ? (
+          <EmptyState
+            icon={BookOpen}
+            title={isAr ? 'التخصصات الأكاديمية قيد الإعداد' : 'Academic fields are being prepared'}
+            description={isAr ? 'ستظهر هنا المجالات التي تتوفر لها فرص دراسية منشورة ومعلومات موثوقة.' : 'Academic fields will appear here as verified scholarship listings become available.'}
+            action={
+              <Link
+                href={`/${locale}/scholarships`}
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6" />
+                <span>{t.nav.findScholarships}</span>
+                <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+              </Link>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {fields.map((field) => {
+              const Icon = ICON_MAP[field.icon] || BookOpen;
+              const name = isAr ? field.name_ar : field.name_en;
+              const desc = isAr ? field.description_ar : field.description_en;
+
+              return (
+                <div key={field.id} className="card-surface card-interactive flex flex-col p-6">
+                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-primary-border/70 bg-primary-soft text-primary">
+                    <Icon className="h-6 w-6" />
+                  </div>
+
+                  <h3 className="mb-2 text-lg font-semibold text-text-primary">{name}</h3>
+
+                  {desc && (
+                    <p className="flex-1 text-sm leading-relaxed text-text-secondary">
+                      {desc}
+                    </p>
+                  )}
+
+                  <div className="mt-5 border-t border-border/70 pt-3">
+                    <Link
+                      href={`/${locale}/scholarships?field=${encodeURIComponent(field.name_en)}`}
+                      className="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+                    >
+                      <span>{isAr ? 'تصفح منح هذا التخصص' : 'Browse Scholarships'}</span>
+                      <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
+                    </Link>
+                  </div>
                 </div>
-
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{name}</h3>
-
-                {desc && (
-                  <p className="text-xs sm:text-sm text-slate-600 leading-relaxed flex-1">
-                    {desc}
-                  </p>
-                )}
-
-                <div className="mt-6 pt-4 border-t border-slate-100">
-                  <Link
-                    href={`/${locale}/scholarships?field=${encodeURIComponent(field.name_en)}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800"
-                  >
-                    <span>{isAr ? 'تصفح منح هذا التخصص' : 'Browse Scholarships'}</span>
-                    <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

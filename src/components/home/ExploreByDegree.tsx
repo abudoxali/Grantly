@@ -53,10 +53,10 @@ export function ExploreByDegree() {
   ];
 
   return (
-    <section className="py-16 sm:py-20 bg-white border-b border-slate-200/80">
+    <section className="border-b border-border/70 bg-white py-14 sm:py-18 lg:py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 font-sans tracking-tight">
+          <h2 className="text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">
             {t.home.exploreDegreesTitle}
           </h2>
           <p className="mt-3 text-sm sm:text-base text-slate-600">
@@ -71,17 +71,17 @@ export function ExploreByDegree() {
               <Link
                 key={item.level}
                 href={item.href}
-                className="group relative flex flex-col p-6 bg-slate-50/70 rounded-2xl border border-slate-200/80 hover:border-emerald-500/80 hover:bg-emerald-50/30 hover:shadow-md transition-all duration-200"
+                className="card-surface card-interactive group relative flex flex-col p-6"
               >
-                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-emerald-700 shadow-2xs group-hover:scale-105 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-200">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-primary-border/70 bg-primary-soft text-primary shadow-2xs transition-all duration-200 group-hover:scale-105 group-hover:bg-primary group-hover:text-white">
                   <Icon className="w-6 h-6" />
                 </div>
 
                 <div className="mt-4 flex-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-primary">
                     {item.highlight}
                   </span>
-                  <h3 className="text-lg font-bold text-slate-900 mt-1 group-hover:text-emerald-800 transition-colors">
+                  <h3 className="mt-1 text-lg font-semibold text-text-primary transition-colors group-hover:text-primary">
                     {item.title}
                   </h3>
                   <p className="mt-2 text-xs text-slate-600 leading-relaxed">
@@ -89,7 +89,7 @@ export function ExploreByDegree() {
                   </p>
                 </div>
 
-                <div className="mt-5 pt-3 border-t border-slate-200/60 flex items-center text-xs font-bold text-emerald-700 group-hover:text-emerald-800">
+                <div className="mt-5 flex items-center border-t border-border/70 pt-3 text-xs font-semibold text-primary">
                   <span>{t.common.scholarships}</span>
                   <ArrowRight className="w-3.5 h-3.5 ms-1.5 rtl:rotate-180 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
                 </div>
