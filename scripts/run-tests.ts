@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import * as fs from 'fs';
 import * as path from 'path';
 import { validateEnv } from '../src/lib/env';
@@ -218,16 +219,322 @@ assert(
 );
 
 // -----------------------------------------------------------------------------
-// SUMMARY
+// 6. PRODUCTION SUPABASE REPOSITORY FALLBACK REGRESSION TESTS
 // -----------------------------------------------------------------------------
-console.log(`\n==================================================`);
-console.log(`Test Execution Summary:`);
-console.log(`Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);
-console.log(`==================================================\n`);
+import {
+  getScholarships,
+  getScholarshipBySlug,
+  getCountries,
+  getFields,
+  getGuides,
+  getGuideBySlug,
+  getProfile,
+  __setSupabaseClientForTesting,
+} from '../src/lib/db/repository';
 
-if (failedTests > 0) {
-  process.exit(1);
-} else {
-  console.log('✓ All tests passed successfully.\n');
-  process.exit(0);
+function createMockSupabase(handlers: Record<string, (query: any) => Promise<any>>) {
+  return {
+    from: (table: string) => {
+      const state: any = {
+        table,
+        filters: [],
+        selected: '*',
+        isSingle: false,
+        isHead: false,
+      };
+
+      const chain: any = {
+        select: (cols: string, opts?: any) => {
+          state.selected = cols;
+          if (opts?.head) state.isHead = true;
+          return chain;
+        },
+        eq: (col: string, val: any) => {
+          state.filters.push({ type: 'eq', col, val });
+          return chain;
+        },
+        in: (col: string, val: any) => {
+          state.filters.push({ type: 'in', col, val });
+          return chain;
+        },
+        order: (col: string, opts?: any) => {
+          state.order = { col, opts };
+          return chain;
+        },
+        limit: (n: number) => {
+          state.limit = n;
+          return chain;
+        },
+        single: () => {
+          state.isSingle = true;
+          return chain;
+        },
+        then: (resolve: any, reject: any) => {
+          const handler = handlers[table];
+          if (!handler) {
+            return Promise.resolve({ data: [], error: null }).then(resolve, reject);
+          }
+          return handler(state).then(resolve, reject);
+        },
+      };
+      return chain;
+    },
+  };
 }
+
+(async () => {
+  console.log('\n--- 6. Production Supabase Repository Fallback Regression Tests ---');
+
+  // 1. production + configured Supabase + database returns zero scholarships => repository returns [] and total 0
+  const prevNodeEnv = process.env.NODE_ENV;
+  (process.env as any).NODE_ENV = 'production';
+
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      scholarships: async () => ({ data: [], count: 0, error: null }),
+    })
+  );
+
+  const emptyScholarships = await getScholarships();
+  assert(
+    'production + configured Supabase + 0 DB rows returns [] and total 0',
+    emptyScholarships.scholarships.length === 0 && emptyScholarships.total === 0,
+    `Got ${emptyScholarships.scholarships.length} scholarships, total ${emptyScholarships.total}`
+  );
+
+  // 2. production + configured Supabase + scholarship slug not found => returns null, NOT local seed scholarship
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      scholarships: async () => ({
+        data: null,
+        error: { code: 'PGRST116', message: 'Row not found' },
+      }),
+    })
+  );
+
+  const notFoundSch = await getScholarshipBySlug('chevening-scholarships-uk');
+  assert(
+    'production + configured Supabase + slug not found in DB returns null, NOT local seed scholarship',
+    notFoundSch === null,
+    `Returned seed data: ${JSON.stringify(notFoundSch?.title_en)}`
+  );
+
+  // 3. production + configured Supabase query error (e.g. 500) => throws explicit error => must NOT return local seed data
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      scholarships: async () => ({
+        data: null,
+        error: { code: '500', message: 'connection failure' },
+      }),
+    })
+  );
+
+  let schQueryThrew = false;
+  try {
+    const result = await getScholarships();
+    if (result.scholarships.length > 0) {
+      schQueryThrew = false;
+    }
+  } catch {
+    schQueryThrew = true;
+  }
+  assert(
+    'production + configured Supabase query error throws explicit error and does NOT return seed data',
+    schQueryThrew === true,
+    'Query failed silently and returned local seed data'
+  );
+
+  // 3b. production + 42501 RLS permission error on empty table => returns [] and total 0, NOT seed data
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      scholarships: async () => ({
+        data: null,
+        error: { code: '42501', message: 'permission denied for function is_admin' },
+      }),
+    })
+  );
+  const rlsEmptySch = await getScholarships();
+  assert(
+    'production + 42501 RLS permission error on empty scholarships returns [] and total 0, NOT seed data',
+    rlsEmptySch.scholarships.length === 0 && rlsEmptySch.total === 0,
+    `Returned seed data: ${rlsEmptySch.scholarships.length}`
+  );
+
+  const rlsNotFoundSlug = await getScholarshipBySlug('chevening-scholarships-uk');
+  assert(
+    'production + 42501 RLS permission error on slug lookup returns null, NOT seed scholarship',
+    rlsNotFoundSlug === null,
+    `Returned seed data: ${JSON.stringify(rlsNotFoundSlug?.title_en)}`
+  );
+
+  // 4. production country query returning [] => returns []
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      countries: async () => ({ data: [], error: null }),
+    })
+  );
+  const emptyCountries = await getCountries();
+  assert(
+    'production country query returning [] returns []',
+    Array.isArray(emptyCountries) && emptyCountries.length === 0,
+    `Got length ${emptyCountries.length}`
+  );
+
+  // 4b. production country query error => throws and does NOT return seed countries
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      countries: async () => ({ data: null, error: { code: '500', message: 'DB error' } }),
+    })
+  );
+  let countriesThrew = false;
+  try {
+    const c = await getCountries();
+    if (c.length > 0) countriesThrew = false;
+  } catch {
+    countriesThrew = true;
+  }
+  assert(
+    'production country query error throws and does NOT return seed countries',
+    countriesThrew === true,
+    'Fell back to local seed countries'
+  );
+
+  // 5. production field query returning [] => returns []
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      fields: async () => ({ data: [], error: null }),
+    })
+  );
+  const emptyFields = await getFields();
+  assert(
+    'production field query returning [] returns []',
+    Array.isArray(emptyFields) && emptyFields.length === 0,
+    `Got length ${emptyFields.length}`
+  );
+
+  // 5b. production field query error => throws and does NOT return seed fields
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      fields: async () => ({ data: null, error: { code: '500', message: 'DB error' } }),
+    })
+  );
+  let fieldsThrew = false;
+  try {
+    const f = await getFields();
+    if (f.length > 0) fieldsThrew = false;
+  } catch {
+    fieldsThrew = true;
+  }
+  assert(
+    'production field query error throws and does NOT return seed fields',
+    fieldsThrew === true,
+    'Fell back to local seed fields'
+  );
+
+  // 6. production providers/guides equivalent behavior
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      guides: async () => ({ data: [], error: null }),
+    })
+  );
+  const emptyGuides = await getGuides(true);
+  assert(
+    'production guides query returning [] returns []',
+    Array.isArray(emptyGuides) && emptyGuides.length === 0,
+    `Got length ${emptyGuides.length}`
+  );
+
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      guides: async () => ({
+        data: null,
+        error: { code: '42501', message: 'permission denied for function is_admin' },
+      }),
+    })
+  );
+  const rlsGuides = await getGuides(true);
+  assert(
+    'production guides query on 42501 returns [], NOT seed guides',
+    Array.isArray(rlsGuides) && rlsGuides.length === 0,
+    `Got length ${rlsGuides.length}`
+  );
+
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      guides: async () => ({ data: null, error: { code: 'PGRST116', message: 'Row not found' } }),
+    })
+  );
+  const missingGuide = await getGuideBySlug('how-to-win-chevening-scholarship');
+  assert(
+    'production guide slug not found in DB returns null, NOT local seed guide',
+    missingGuide === null,
+    `Returned seed guide: ${JSON.stringify(missingGuide?.title_en)}`
+  );
+
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      guides: async () => ({
+        data: null,
+        error: { code: '42501', message: 'permission denied for function is_admin' },
+      }),
+    })
+  );
+  const rlsMissingGuide = await getGuideBySlug('how-to-win-chevening-scholarship');
+  assert(
+    'production guide slug on 42501 returns null, NOT local seed guide',
+    rlsMissingGuide === null,
+    `Returned seed guide: ${JSON.stringify(rlsMissingGuide?.title_en)}`
+  );
+
+  // 6b. production profile query does NOT return admin-seed-id or demo profiles
+  __setSupabaseClientForTesting(
+    createMockSupabase({
+      profiles: async () => ({ data: null, error: { code: 'PGRST116', message: 'Not found' } }),
+    })
+  );
+  const missingProfile = await getProfile('admin-seed-id');
+  assert(
+    'production getProfile does NOT return admin-seed-id demo profile',
+    missingProfile === null,
+    `Returned fake profile: ${JSON.stringify(missingProfile?.email)}`
+  );
+
+  // 7. local development mode can still use seed fallback where explicitly intended
+  (process.env as any).NODE_ENV = 'development';
+  __setSupabaseClientForTesting(null);
+
+  const devScholarships = await getScholarships();
+  assert(
+    'local development mode can still use seed fallback where explicitly intended',
+    devScholarships.scholarships.length > 0 &&
+      devScholarships.scholarships.some((s) => s.slug === 'chevening-scholarships-uk')
+  );
+
+  const devChevening = await getScholarshipBySlug('chevening-scholarships-uk');
+  assert(
+    'local development mode returns seed scholarship for getScholarshipBySlug',
+    devChevening !== null && devChevening.slug === 'chevening-scholarships-uk'
+  );
+
+  // Restore environment
+  (process.env as any).NODE_ENV = prevNodeEnv;
+  __setSupabaseClientForTesting(undefined);
+
+  // -----------------------------------------------------------------------------
+  // SUMMARY
+  // -----------------------------------------------------------------------------
+  console.log(`\n==================================================`);
+  console.log(`Test Execution Summary:`);
+  console.log(`Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests}`);
+  console.log(`==================================================\n`);
+
+  if (failedTests > 0) {
+    process.exit(1);
+  } else {
+    console.log('✓ All tests passed successfully.\n');
+    process.exit(0);
+  }
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

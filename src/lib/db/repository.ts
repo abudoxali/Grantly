@@ -84,12 +84,28 @@ export interface ScholarshipFilters {
   sortBy?: 'deadline-asc' | 'deadline-desc' | 'popular' | 'newest';
 }
 
+let testSupabaseClient: any = undefined;
+
+export function __setSupabaseClientForTesting(client: any) {
+  testSupabaseClient = client;
+}
+
+function getSupabase() {
+  if (testSupabaseClient !== undefined) return testSupabaseClient;
+  return createClient();
+}
+
+function isConfigured() {
+  if (testSupabaseClient !== undefined) return Boolean(testSupabaseClient);
+  return isSupabaseConfigured;
+}
+
+function isProduction() {
+  return process.env.NODE_ENV === 'production';
+}
+
 function assertProductionConfig() {
-  if (
-    process.env.NODE_ENV === 'production' &&
-    !isSupabaseConfigured &&
-    process.env.ALLOW_LOCAL_MOCK !== 'true'
-  ) {
+  if (isProduction() && !isConfigured()) {
     throw new Error(
       'Grantly production configuration error: Supabase is not configured. Live Supabase connection is required in production.'
     );
@@ -101,73 +117,80 @@ export async function getScholarships(
   locale: 'en' | 'ar' = 'en'
 ): Promise<{ scholarships: Scholarship[]; total: number }> {
   assertProductionConfig();
-  const supabase = createClient();
+  const supabase = getSupabase();
 
-  if (isSupabaseConfigured && supabase) {
-    try {
-      let query = supabase.from('scholarships').select(
-        `
-        *,
-        country:countries(*),
-        provider:providers(*)
-      `,
-        { count: 'exact' }
-      );
+  if (isConfigured() && supabase) {
+    let query = supabase.from('scholarships').select(
+      `
+      *,
+      country:countries(*),
+      provider:providers(*)
+    `,
+      { count: 'exact' }
+    );
 
-      if (filters.publishedOnly !== false) {
-        query = query.eq('published', true);
-      }
+    if (filters.publishedOnly !== false) {
+      query = query.eq('published', true);
+    }
 
-      if (filters.featuredOnly) {
-        query = query.eq('featured', true);
-      }
+    if (filters.featuredOnly) {
+      query = query.eq('featured', true);
+    }
 
-      if (filters.fundingTypes && filters.fundingTypes.length > 0) {
-        query = query.in('funding_type', filters.fundingTypes);
-      }
+    if (filters.fundingTypes && filters.fundingTypes.length > 0) {
+      query = query.in('funding_type', filters.fundingTypes);
+    }
 
-      if (filters.statuses && filters.statuses.length > 0) {
-        query = query.in('status', filters.statuses);
-      }
+    if (filters.statuses && filters.statuses.length > 0) {
+      query = query.in('status', filters.statuses);
+    }
 
-      const { data, count, error } = await query;
-      if (!error && data) {
-        let results = data as Scholarship[];
-
-        // Apply in-memory text/array filtering for complex query
-        if (filters.query) {
-          const q = filters.query.toLowerCase();
-          results = results.filter((s) => {
-            const title = (locale === 'ar' ? s.title_ar : s.title_en).toLowerCase();
-            const desc = (locale === 'ar' ? s.short_description_ar || '' : s.short_description_en || '').toLowerCase();
-            const countryName = (locale === 'ar' ? s.country?.name_ar || '' : s.country?.name_en || '').toLowerCase();
-            return title.includes(q) || desc.includes(q) || countryName.includes(q);
-          });
+    const { data, count, error } = await query;
+    if (error) {
+      if (isProduction()) {
+        if (error.code === '42501' || error.message?.includes('is_admin')) {
+          return { scholarships: [], total: 0 };
         }
-
-        if (filters.degrees && filters.degrees.length > 0) {
-          results = results.filter((s) =>
-            s.degree_levels.some((d) => filters.degrees?.includes(d))
-          );
-        }
-
-        if (filters.countries && filters.countries.length > 0) {
-          results = results.filter(
-            (s) => s.country && filters.countries?.includes(s.country.name_en)
-          );
-        }
-
-        // Sorting
-        results = sortScholarships(results, filters.sortBy);
-
-        return { scholarships: results, total: count || results.length };
+        throw new Error(`Database error fetching scholarships: ${error.message}`);
       }
-    } catch {
-      // Fall through to local store on Supabase error
+    } else if (data) {
+      let results = data as Scholarship[];
+
+      // Apply in-memory text/array filtering for complex query
+      if (filters.query) {
+        const q = filters.query.toLowerCase();
+        results = results.filter((s) => {
+          const title = (locale === 'ar' ? s.title_ar : s.title_en).toLowerCase();
+          const desc = (locale === 'ar' ? s.short_description_ar || '' : s.short_description_en || '').toLowerCase();
+          const countryName = (locale === 'ar' ? s.country?.name_ar || '' : s.country?.name_en || '').toLowerCase();
+          return title.includes(q) || desc.includes(q) || countryName.includes(q);
+        });
+      }
+
+      if (filters.degrees && filters.degrees.length > 0) {
+        results = results.filter((s) =>
+          s.degree_levels.some((d) => filters.degrees?.includes(d))
+        );
+      }
+
+      if (filters.countries && filters.countries.length > 0) {
+        results = results.filter(
+          (s) => s.country && filters.countries?.includes(s.country.name_en)
+        );
+      }
+
+      // Sorting
+      results = sortScholarships(results, filters.sortBy);
+
+      return { scholarships: results, total: count ?? results.length };
     }
   }
 
-  // Local store fallback
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
+  }
+
+  // Local store fallback (Development only)
   let list = globalStore.scholarships;
 
   if (filters.publishedOnly !== false) {
@@ -258,27 +281,42 @@ function sortScholarships(
 
 export async function getScholarshipBySlug(slug: string): Promise<Scholarship | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('scholarships')
-        .select(
-          `
-          *,
-          country:countries(*),
-          provider:providers(*)
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('scholarships')
+      .select(
         `
-        )
-        .eq('slug', slug)
-        .single();
+        *,
+        country:countries(*),
+        provider:providers(*)
+      `
+      )
+      .eq('slug', slug)
+      .single();
 
-      if (!error && data) {
-        return data as Scholarship;
-      }
-    } catch {
-      // Fallback
+    if (!error && data) {
+      return data as Scholarship;
     }
+
+    if (
+      error &&
+      (error.code === 'PGRST116' ||
+        error.code === '42501' ||
+        error.message?.includes('is_admin'))
+    ) {
+      return null;
+    }
+
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching scholarship: ${error.message}`);
+      }
+    }
+  }
+
+  if (isProduction()) {
+    return null;
   }
 
   const found = globalStore.scholarships.find((s) => s.slug === slug);
@@ -289,8 +327,8 @@ export async function createScholarship(
   data: Omit<Scholarship, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Scholarship> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: created, error } = await supabase
       .from('scholarships')
       .insert(data as any)
@@ -302,6 +340,10 @@ export async function createScholarship(
     if (created) {
       return created as Scholarship;
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const newScholarship: Scholarship = {
@@ -324,8 +366,8 @@ export async function updateScholarship(
   updates: Partial<Scholarship>
 ): Promise<Scholarship | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: updated, error } = await (supabase as any)
       .from('scholarships')
       .update({ ...updates, updated_at: new Date().toISOString() })
@@ -338,6 +380,10 @@ export async function updateScholarship(
     if (updated) {
       return updated as Scholarship;
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const idx = globalStore.scholarships.findIndex((s) => s.id === id);
@@ -360,13 +406,17 @@ export async function updateScholarship(
 
 export async function deleteScholarship(id: string): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase.from('scholarships').delete().eq('id', id);
     if (error) {
       throw new Error(`Database error deleting scholarship: ${error.message}`);
     }
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initialLen = globalStore.scholarships.length;
@@ -380,17 +430,23 @@ export async function deleteScholarship(id: string): Promise<boolean> {
 
 export async function getCountries(): Promise<Country[]> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('countries')
-        .select('*')
-        .order('name_en');
-      if (!error && data) return data as Country[];
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('countries')
+      .select('*')
+      .order('name_en');
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching countries: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Country[];
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
   }
 
   return [...globalStore.countries];
@@ -406,8 +462,8 @@ export async function createCountry(
   data: Omit<Country, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Country> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: created, error } = await supabase
       .from('countries')
       .insert(data as any)
@@ -415,6 +471,10 @@ export async function createCountry(
       .single();
     if (error) throw new Error(`Database error creating country: ${error.message}`);
     if (created) return created as Country;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const newCountry: Country = {
@@ -432,8 +492,8 @@ export async function updateCountry(
   updates: Partial<Country>
 ): Promise<Country | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: updated, error } = await (supabase as any)
       .from('countries')
       .update(updates as any)
@@ -442,6 +502,10 @@ export async function updateCountry(
       .single();
     if (error) throw new Error(`Database error updating country: ${error.message}`);
     if (updated) return updated as Country;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const idx = globalStore.countries.findIndex((c) => c.id === id);
@@ -456,11 +520,15 @@ export async function updateCountry(
 
 export async function deleteCountry(id: string): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase.from('countries').delete().eq('id', id);
     if (error) throw new Error(`Database error deleting country: ${error.message}`);
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initial = globalStore.countries.length;
@@ -474,14 +542,20 @@ export async function deleteCountry(id: string): Promise<boolean> {
 
 export async function getFields(): Promise<Field[]> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase.from('fields').select('*').order('name_en');
-      if (!error && data) return data as Field[];
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase.from('fields').select('*').order('name_en');
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching fields: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Field[];
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
   }
 
   return [...globalStore.fields];
@@ -497,8 +571,8 @@ export async function createField(
   data: Omit<Field, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Field> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: created, error } = await supabase
       .from('fields')
       .insert(data as any)
@@ -506,6 +580,10 @@ export async function createField(
       .single();
     if (error) throw new Error(`Database error creating field: ${error.message}`);
     if (created) return created as Field;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const newField: Field = {
@@ -523,8 +601,8 @@ export async function updateField(
   updates: Partial<Field>
 ): Promise<Field | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: updated, error } = await (supabase as any)
       .from('fields')
       .update(updates as any)
@@ -533,6 +611,10 @@ export async function updateField(
       .single();
     if (error) throw new Error(`Database error updating field: ${error.message}`);
     if (updated) return updated as Field;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const idx = globalStore.fields.findIndex((f) => f.id === id);
@@ -547,11 +629,15 @@ export async function updateField(
 
 export async function deleteField(id: string): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase.from('fields').delete().eq('id', id);
     if (error) throw new Error(`Database error deleting field: ${error.message}`);
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initial = globalStore.fields.length;
@@ -565,17 +651,23 @@ export async function deleteField(id: string): Promise<boolean> {
 
 export async function getProviders(): Promise<Provider[]> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('providers')
-        .select('*, country:countries(*)')
-        .order('name_en');
-      if (!error && data) return data as Provider[];
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('providers')
+      .select('*, country:countries(*)')
+      .order('name_en');
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching providers: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Provider[];
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
   }
 
   return [...globalStore.providers];
@@ -591,8 +683,8 @@ export async function createProvider(
   data: Omit<Provider, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Provider> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: created, error } = await supabase
       .from('providers')
       .insert(data as any)
@@ -600,6 +692,10 @@ export async function createProvider(
       .single();
     if (error) throw new Error(`Database error creating provider: ${error.message}`);
     if (created) return created as Provider;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const newProvider: Provider = {
@@ -617,8 +713,8 @@ export async function updateProvider(
   updates: Partial<Provider>
 ): Promise<Provider | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: updated, error } = await (supabase as any)
       .from('providers')
       .update(updates)
@@ -627,6 +723,10 @@ export async function updateProvider(
       .single();
     if (error) throw new Error(`Database error updating provider: ${error.message}`);
     if (updated) return updated as Provider;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const index = globalStore.providers.findIndex((p) => p.id === id);
@@ -651,11 +751,15 @@ export async function deleteProvider(id: string): Promise<boolean> {
     throw new Error('Cannot delete provider: active scholarships reference this provider. Unlink or reassign scholarships first.');
   }
 
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase.from('providers').delete().eq('id', id);
     if (error) throw new Error(`Database error deleting provider: ${error.message}`);
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initialLength = globalStore.providers.length;
@@ -676,8 +780,8 @@ export async function logAdminAudit(params: {
   actorId?: string;
 }): Promise<void> {
   try {
-    const supabase = createClient();
-    if (isSupabaseConfigured && supabase) {
+    const supabase = getSupabase();
+    if (isConfigured() && supabase) {
       await (supabase as any).from('admin_audit_logs').insert({
         action: params.action,
         entity_type: params.entityType,
@@ -698,18 +802,27 @@ export async function logAdminAudit(params: {
 
 export async function getGuides(publishedOnly = true): Promise<Guide[]> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      let query = supabase.from('guides').select('*').order('created_at', { ascending: false });
-      if (publishedOnly) {
-        query = query.eq('published', true);
-      }
-      const { data, error } = await query;
-      if (!error && data) return data as Guide[];
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    let query = supabase.from('guides').select('*').order('created_at', { ascending: false });
+    if (publishedOnly) {
+      query = query.eq('published', true);
     }
+    const { data, error } = await query;
+    if (error) {
+      if (isProduction()) {
+        if (error.code === '42501' || error.message?.includes('is_admin')) {
+          return [];
+        }
+        throw new Error(`Database error fetching guides: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Guide[];
+    }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
   }
 
   if (publishedOnly) {
@@ -720,6 +833,38 @@ export async function getGuides(publishedOnly = true): Promise<Guide[]> {
 
 export async function getGuideBySlug(slug: string): Promise<Guide | null> {
   assertProductionConfig();
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('guides')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (!error && data) {
+      return data as Guide;
+    }
+
+    if (
+      error &&
+      (error.code === 'PGRST116' ||
+        error.code === '42501' ||
+        error.message?.includes('is_admin'))
+    ) {
+      return null;
+    }
+
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching guide: ${error.message}`);
+      }
+    }
+  }
+
+  if (isProduction()) {
+    return null;
+  }
+
   const guides = await getGuides(false);
   return guides.find((g) => g.slug === slug) || null;
 }
@@ -728,8 +873,8 @@ export async function createGuide(
   data: Omit<Guide, 'id' | 'created_at' | 'updated_at'>
 ): Promise<Guide> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: created, error } = await supabase
       .from('guides')
       .insert(data as any)
@@ -737,6 +882,10 @@ export async function createGuide(
       .single();
     if (error) throw new Error(`Database error creating guide: ${error.message}`);
     if (created) return created as Guide;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const newGuide: Guide = {
@@ -754,8 +903,8 @@ export async function updateGuide(
   updates: Partial<Guide>
 ): Promise<Guide | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data: updated, error } = await (supabase as any)
       .from('guides')
       .update(updates as any)
@@ -764,6 +913,10 @@ export async function updateGuide(
       .single();
     if (error) throw new Error(`Database error updating guide: ${error.message}`);
     if (updated) return updated as Guide;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const idx = globalStore.guides.findIndex((g) => g.id === id);
@@ -778,11 +931,15 @@ export async function updateGuide(
 
 export async function deleteGuide(id: string): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase.from('guides').delete().eq('id', id);
     if (error) throw new Error(`Database error deleting guide: ${error.message}`);
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initial = globalStore.guides.length;
@@ -795,28 +952,34 @@ export async function deleteGuide(id: string): Promise<boolean> {
 // ==============================================================================
 
 export async function getBookmarks(userId: string): Promise<Bookmark[]> {
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('bookmarks')
-        .select(
-          `
-          *,
-          scholarship:scholarships(
-            *,
-            country:countries(*),
-            provider:providers(*)
-          )
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('bookmarks')
+      .select(
         `
+        *,
+        scholarship:scholarships(
+          *,
+          country:countries(*),
+          provider:providers(*)
         )
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      `
+      )
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-      if (!error && data) return data as Bookmark[];
-    } catch {
-      // Fallback
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching bookmarks: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Bookmark[];
     }
+  }
+
+  if (isProduction()) {
+    return [];
   }
 
   return globalStore.bookmarks
@@ -832,8 +995,8 @@ export async function addBookmark(
   scholarshipId: string
 ): Promise<Bookmark> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({ user_id: userId, scholarship_id: scholarshipId } as any)
@@ -852,6 +1015,10 @@ export async function addBookmark(
       throw new Error(`Database error adding bookmark: ${error.message}`);
     }
     if (data) return data as Bookmark;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const existing = globalStore.bookmarks.find(
@@ -875,8 +1042,8 @@ export async function removeBookmark(
   scholarshipId: string
 ): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { error } = await supabase
       .from('bookmarks')
       .delete()
@@ -886,6 +1053,10 @@ export async function removeBookmark(
       throw new Error(`Database error removing bookmark: ${error.message}`);
     }
     return true;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const initial = globalStore.bookmarks.length;
@@ -900,21 +1071,25 @@ export async function isBookmarked(
   scholarshipId: string
 ): Promise<boolean> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { count, error } = await supabase
-        .from('bookmarks')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
-        .eq('scholarship_id', scholarshipId);
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { count, error } = await supabase
+      .from('bookmarks')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('scholarship_id', scholarshipId);
 
-      if (!error && typeof count === 'number') {
-        return count > 0;
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error checking bookmark: ${error.message}`);
       }
-    } catch {
-      // Fallback
+    } else if (typeof count === 'number') {
+      return count > 0;
     }
+  }
+
+  if (isProduction()) {
+    return false;
   }
 
   return globalStore.bookmarks.some(
@@ -928,14 +1103,20 @@ export async function isBookmarked(
 
 export async function getProfiles(): Promise<Profile[]> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (!error && data) return data as Profile[];
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase.from('profiles').select('*');
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching profiles: ${error.message}`);
+      }
+    } else if (data) {
+      return data as Profile[];
     }
+  }
+
+  if (isProduction()) {
+    throw new Error('Database is unavailable or unconfigured in production.');
   }
 
   return [...globalStore.profiles];
@@ -943,18 +1124,31 @@ export async function getProfiles(): Promise<Profile[]> {
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      if (!error && data) return data as Profile;
-    } catch {
-      // Fallback
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) {
+      return data as Profile;
     }
+
+    if (error && error.code === 'PGRST116') {
+      return null;
+    }
+
+    if (error) {
+      if (isProduction()) {
+        throw new Error(`Database error fetching profile: ${error.message}`);
+      }
+    }
+  }
+
+  if (isProduction()) {
+    return null;
   }
 
   return globalStore.profiles.find((p) => p.id === userId) || null;
@@ -965,8 +1159,8 @@ export async function updateProfile(
   updates: Partial<Profile>
 ): Promise<Profile | null> {
   assertProductionConfig();
-  const supabase = createClient();
-  if (isSupabaseConfigured && supabase) {
+  const supabase = getSupabase();
+  if (isConfigured() && supabase) {
     const { data, error } = await (supabase as any)
       .from('profiles')
       .update({ ...updates, updated_at: new Date().toISOString() } as any)
@@ -977,6 +1171,10 @@ export async function updateProfile(
       throw new Error(`Database error updating profile: ${error.message}`);
     }
     if (data) return data as Profile;
+  }
+
+  if (isProduction()) {
+    throw new Error('Database write failed in production.');
   }
 
   const idx = globalStore.profiles.findIndex((p) => p.id === userId);
