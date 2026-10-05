@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- Migration: Split public content reads from authenticated admin reads
--- Timestamp: 2026-10-05 14:00:00
+-- Timestamp: 2026-10-05 13:17:12
 -- Purpose: Keep anonymous policies independent from the private admin helper
 -- ================================================================================
 

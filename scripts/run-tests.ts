@@ -78,7 +78,7 @@ if (fs.existsSync(migration2Path)) {
 
 const splitReadPoliciesPath = path.resolve(
   process.cwd(),
-  'supabase/migrations/20261005140000_split_public_admin_read_policies.sql'
+  'supabase/migrations/20261005131712_split_public_admin_read_policies.sql'
 );
 const moveAdminHelperPath = path.resolve(
   process.cwd(),
