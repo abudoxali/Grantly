@@ -114,11 +114,26 @@ A one-time temporary seed bridge was used only to execute the canonical server-s
 - **Nginx:** template `/etc/nginx/sites-available/grantly.conf.disabled` is present with placeholders. `nginx -t` passes. No Grantly configuration was activated or reloaded; unrelated sites (`mohamy.abud.fun`, `elhabak`, `abud-platform`) are protected and untouched.
 - **DNS:** NOT CONFIGURED; awaiting client domain and DNS delegation.
 - **HTTPS/TLS:** NOT ACTIVE; awaiting DNS resolution.
-- **Public smoke test:** previous internal production route checks passed; after seeding, catalog/detail routes must be rechecked in the final launch pass against the populated production database.
+- **Public smoke test:** verified 100% on internal production runtime with the live seeded catalog:
+  - `/` -> 307 redirect to `/[locale]`
+  - `/en`, `/ar` -> 200 OK (renders 14 verified grants, 12 host nations, floating Chevening and DAAD cards)
+  - `/en/scholarships`, `/ar/scholarships` -> 200 OK (renders all 14 live scholarships, filters, sort)
+  - `/en/countries`, `/ar/countries` -> 200 OK (renders 12 destination countries)
+  - `/en/fields`, `/ar/fields` -> 200 OK (renders 8 academic fields)
+  - `/en/guides`, `/ar/guides` -> 200 OK (renders 5 application playbooks)
+  - `/en/scholarships/chevening-scholarships-uk`, `/ar/scholarships/chevening-scholarships-uk` -> 200 OK (renders verified FCDO provider, UK, £1,450/month stipend, deadline, requirements, and official portal link)
+  - `/en/guides/winning-scholarship-motivation-letter`, `/ar/guides/winning-scholarship-motivation-letter` -> 200 OK (renders full motivation letter guide content)
+  - `/en/auth/login`, `/ar/auth/login` -> 200 OK
+  - `/en/auth/register`, `/ar/auth/register` -> 200 OK
+  - `/en/auth/forgot-password`, `/ar/auth/forgot-password` -> 200 OK
+  - `/en/account/saved`, `/ar/account/saved` -> 200 OK
+  - `/en/account/profile`, `/ar/account/profile` -> 200 OK
+  - `/en/admin/login`, `/ar/admin/login` -> 200 OK
+  - `/en/admin`, `/ar/admin` -> 307 redirect to login (auth boundary verified)
 
 ## UI, localization, accessibility, and responsive visual QA
 
-- **Rendered visual QA:** VERIFIED across 360, 390, 430, 768, 1024, 1280, 1440, and 1920px viewports for both Arabic RTL (`dir="rtl"`, `lang="ar"`) and English LTR (`dir="ltr"`, `lang="en"`) using headless Chrome with CDP device metrics emulation.
+- **Rendered visual QA:** VERIFIED across 360, 390, 430, 768, 1024, 1280, 1440, and 1920px viewports for both Arabic RTL (`dir="rtl"`, `lang="ar"`) and English LTR (`dir="ltr"`, `lang="en"`) using headless Chrome with CDP device metrics emulation. Focused visual regression check with live seeded data confirmed zero layout shifts, proper rendering of 14 grants / 12 countries in telemetry bars, and floating hero cards.
 - **Overflow & layout:** zero horizontal overflow across all viewports (`document.documentElement.scrollWidth <= window.innerWidth`).
 - **Typography & RTL:** Arabic headings, search bar, chips, and statistics cards properly aligned to the right; directional arrows mirror correctly (`<-` in RTL, `->` in LTR). English aligns to the left.
 - **Brand palette:** feminine pink-led palette applied consistently across CTAs, badges, highlights, and borders.
