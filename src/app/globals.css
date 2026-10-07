@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
@@ -68,8 +69,8 @@
   --color-teal-950: var(--brand-primary-950);
   --shadow-card: var(--surface-shadow);
   --shadow-card-hover: var(--surface-shadow-hover);
-  --font-serif: var(--font-serif), "Playfair Display", Georgia, serif;
-  --font-handwriting: var(--font-handwriting), "Caveat", cursive;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-handwriting: "Caveat", cursive;
 }
 
 @layer base {

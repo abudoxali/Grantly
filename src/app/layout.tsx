@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans, Playfair_Display, Caveat } from 'next/font/google';
+import { IBM_Plex_Sans_Arabic, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
@@ -13,20 +13,6 @@ const plusJakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
   variable: '--font-sans',
-  display: 'swap',
-});
-
-const playfair = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['600', '700', '800', '900'],
-  variable: '--font-serif',
-  display: 'swap',
-});
-
-const caveat = Caveat({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  variable: '--font-handwriting',
   display: 'swap',
 });
 
@@ -68,7 +54,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`h-full antialiased ${ibmPlexArabic.variable} ${plusJakarta.variable} ${playfair.variable} ${caveat.variable}`}
+      className={`h-full antialiased ${ibmPlexArabic.variable} ${plusJakarta.variable}`}
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col bg-background text-text-primary font-sans selection:bg-primary-soft selection:text-text-primary">
