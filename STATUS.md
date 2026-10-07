@@ -10,7 +10,7 @@
 
 ## 1. Source and Quality Gates
 
-- **Final repository HEAD:** `3bb563ea4def01c6e81d29478339252f9359867e`
+- **Repository HEAD:** tracked on `main` (commit preceding this update was `a2d4e1516c795516d7aaaa933089a38d121971da`)
 - **Application source SHA:** `3bb563ea4def01c6e81d29478339252f9359867e`
 - **Deployed application SHA:** `3bb563ea4def01c6e81d29478339252f9359867e`
 - **Active VPS release:** `/var/www/grantly/releases/20261007011908`
@@ -106,7 +106,7 @@ curl -fsS http://127.0.0.1:3300/api/ready
 - **Project:** Grantly, ref `hyhtgwxmcjrwcucozbov`; PostgreSQL 17.
 - **Migration parity:** applied migration history matches `supabase/migrations/`; latest migration is `20261005131712_split_public_admin_read_policies`.
 - **RLS policies:** least-privilege public/admin policy split remains active. Anti-privilege escalation trigger `trg_prevent_profile_role_escalation` active on `profiles` (raises 42501 on unauthorized role change).
-- **Security Advisor:** 0 security lints.
+- **Security Advisor:** 1 advisory notice ("Leaked Password Protection Disabled") currently reported in Auth settings; requires enabling toggle in Supabase Dashboard (Authentication > Attack Protection) or via Management API (`SUPABASE_ACCESS_TOKEN`). All database RLS policies and table configurations pass with 0 unresolved issues.
 - **Live database catalog counts (VERIFIED):**
   - `countries`: 12
   - `fields`: 8
@@ -115,7 +115,7 @@ curl -fsS http://127.0.0.1:3300/api/ready
   - `guides`: 5
   - `scholarship_fields`: 0 (intentional; canonical seed contains no field mapping)
 - **Live seed idempotency:** VERIFIED (two real executions, unchanged counts).
-- **Temporary Edge Function (`grantly-seed-temporary`):** inert HTTP 410 handler (`{"error":"disabled"}`), verified safe.
+- **Temporary Edge Function (`grantly-seed-temporary`):** inert HTTP 410 handler (`{"error":"disabled"}`), verified safe; awaiting permanent deletion via Supabase Dashboard or Management API (`SUPABASE_ACCESS_TOKEN REQUIRED`).
 
 ---
 
@@ -125,6 +125,7 @@ curl -fsS http://127.0.0.1:3300/api/ready
 - **Initial password generation:** 32-character cryptographically strong random password generated securely during execution with mixed case, numbers, and symbols.
 - **Handoff credential file:** persisted in `/root/.grantly-admin-initial` on VPS `5.189.151.43`.
 - **File permissions:** mode `0600 root:root` (created with `umask 077`). Never exposed in terminal logs, Git, or STATUS.md.
+- **Auth state:** `admin@gmail.com` does not yet exist in Supabase `auth.users`. Execution of `npm run bootstrap:admin` requires `SUPABASE_SERVICE_ROLE_KEY REQUIRED`.
 - **Secure retrieval command:**
   ```sh
   ssh root@5.189.151.43 'cat /root/.grantly-admin-initial'
@@ -140,11 +141,13 @@ curl -fsS http://127.0.0.1:3300/api/ready
 
 ---
 
-## 8. Provider Permission Boundary & Exact Next Steps
+## 8. Provider Permission Boundary & Acceptance Status
 
-The application, runtime, domain, SSL/TLS, reverse proxy, and seeded catalog are 100% operational in production. The following administrative actions require Supabase privileged access:
+The public application runtime, domain, SSL/TLS, reverse proxy, test suites, and seeded catalog are 100% operational in production. Closure of the remaining administrative acceptance items is bounded by Supabase provider management credentials:
 
-1. **Bootstrap Admin User:** executing `npm run bootstrap:admin` requires `SUPABASE_SERVICE_ROLE_KEY` to register `admin@gmail.com` with `email_confirm: true` and assign `role = 'admin'` in `profiles`. Once the key is temporarily injected or the user is created in the Supabase Dashboard, admin login at `/en/admin/login` is immediately ready.
-2. **Supabase Auth Site URL:** configure `https://grantly.abud.fun` as Site URL in Supabase Dashboard (Auth > URL Configuration) or via Management API with `SUPABASE_ACCESS_TOKEN`.
-3. **QA Student Identity:** `3bdullhrgb@gmail.com` registration requires email confirmation; confirm via Supabase Auth Dashboard or direct verification link.
-4. **Temporary Seed Function Deletion:** delete `grantly-seed-temporary` via Supabase Dashboard (Edge Functions) or Management API (currently verified inert returning HTTP 410).
+1. **Production Admin Bootstrap (`admin@gmail.com`):** `SUPABASE_SERVICE_ROLE_KEY REQUIRED`. Executing `npm run bootstrap:admin` requires the service-role key to create the confirmed Auth user and assign `role = 'admin'` in `profiles` (bypassing the anti-escalation trigger). The strong password already resides safely in `/root/.grantly-admin-initial`.
+2. **Admin Golden Path & Storage CRUD:** Blocked pending admin user bootstrap (`SUPABASE_SERVICE_ROLE_KEY REQUIRED`).
+3. **QA Student Golden Path (`3bdullhrgb@gmail.com`):** `SUPABASE_SERVICE_ROLE_KEY REQUIRED`. Required to create or confirm the student user directly without relying on unconfigured SMTP or weakening project-wide email confirmation policies.
+4. **Supabase Auth Site URL & Allowed Redirects:** `SUPABASE_ACCESS_TOKEN REQUIRED`. Site URL (`https://grantly.abud.fun`) and Allowed Redirect URL (`https://grantly.abud.fun/**`) await configuration in the Supabase Dashboard (Auth > URL Configuration) or via Management API.
+5. **Leaked Password Protection:** `SUPABASE_ACCESS_TOKEN REQUIRED`. Security Advisor warning ("Leaked Password Protection Disabled") requires enabling the toggle in Supabase Dashboard (Authentication > Attack Protection) or via Management API.
+6. **Temporary Edge Function Deletion (`grantly-seed-temporary`):** `SUPABASE_ACCESS_TOKEN REQUIRED`. The function is verified inert (HTTP 410) and awaits removal via Supabase Dashboard (Edge Functions) or Management API.
