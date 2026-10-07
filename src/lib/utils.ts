@@ -176,3 +176,103 @@ export function getDaysRemaining(deadlineString: string): { days: number; isUrge
     return { days: 0, isUrgent: false, isExpired: false };
   }
 }
+
+export function getScholarshipCoverImage(scholarship: {
+  id?: string;
+  slug?: string;
+  cover_image?: string | null;
+  country?: { code?: string } | null;
+}): string {
+  if (scholarship.cover_image && scholarship.cover_image.trim().length > 0) {
+    return scholarship.cover_image;
+  }
+  const slug = (scholarship.slug || '').toLowerCase();
+  const countryCode = (scholarship.country?.code || '').toUpperCase();
+
+  if (slug.includes('chevening') || countryCode === 'GB' || slug.includes('uk')) {
+    return '/images/oxford.jpg';
+  }
+  if (slug.includes('daad') || countryCode === 'DE' || slug.includes('german')) {
+    return '/images/berlin.jpg';
+  }
+  if (slug.includes('mext') || countryCode === 'JP' || slug.includes('japan')) {
+    return '/images/fuji.jpg';
+  }
+  if (slug.includes('eiffel') || countryCode === 'FR' || slug.includes('france')) {
+    return '/images/paris.jpg';
+  }
+  if (countryCode === 'CA' || slug.includes('vanier') || slug.includes('canada')) {
+    return '/images/canada.jpg';
+  }
+  if (countryCode === 'US' || slug.includes('fulbright') || slug.includes('usa')) {
+    return '/images/usa.jpg';
+  }
+  if (countryCode === 'AU' || slug.includes('australia')) {
+    return '/images/australia.jpg';
+  }
+  if (countryCode === 'TR' || slug.includes('turkiye') || slug.includes('turkey')) {
+    return '/images/turkey.jpg';
+  }
+
+  const pool = [
+    '/images/oxford.jpg',
+    '/images/berlin.jpg',
+    '/images/fuji.jpg',
+    '/images/paris.jpg',
+    '/images/canada.jpg',
+    '/images/usa.jpg',
+    '/images/australia.jpg',
+    '/images/turkey.jpg',
+  ];
+  let sum = 0;
+  for (let i = 0; i < (scholarship.slug || scholarship.id || '').length; i++) {
+    sum += (scholarship.slug || scholarship.id || '').charCodeAt(i);
+  }
+  return pool[sum % pool.length];
+}
+
+export function getCountryCoverImage(country: {
+  id?: string;
+  code?: string;
+  cover_image?: string | null;
+}): string {
+  if (country.cover_image && country.cover_image.trim().length > 0) {
+    return country.cover_image;
+  }
+  const code = (country.code || '').toUpperCase();
+  switch (code) {
+    case 'GB':
+      return '/images/oxford.jpg';
+    case 'DE':
+      return '/images/berlin.jpg';
+    case 'JP':
+      return '/images/fuji.jpg';
+    case 'FR':
+      return '/images/paris.jpg';
+    case 'CA':
+      return '/images/canada.jpg';
+    case 'US':
+      return '/images/usa.jpg';
+    case 'AU':
+      return '/images/australia.jpg';
+    case 'TR':
+      return '/images/turkey.jpg';
+    default: {
+      const pool = [
+        '/images/oxford.jpg',
+        '/images/berlin.jpg',
+        '/images/fuji.jpg',
+        '/images/paris.jpg',
+        '/images/canada.jpg',
+        '/images/usa.jpg',
+        '/images/australia.jpg',
+        '/images/turkey.jpg',
+      ];
+      let sum = 0;
+      for (let i = 0; i < (country.code || country.id || '').length; i++) {
+        sum += (country.code || country.id || '').charCodeAt(i);
+      }
+      return pool[sum % pool.length];
+    }
+  }
+}

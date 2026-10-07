@@ -68,6 +68,8 @@
   --color-teal-950: var(--brand-primary-950);
   --shadow-card: var(--surface-shadow);
   --shadow-card-hover: var(--surface-shadow-hover);
+  --font-serif: var(--font-serif), "Playfair Display", Georgia, serif;
+  --font-handwriting: var(--font-handwriting), "Caveat", cursive;
 }
 
 @layer base {
@@ -376,8 +378,30 @@ input[type="radio"] {
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
-@utility text-balance {
-  text-wrap: balance;
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(8px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
 }
 
 /* Respect prefers-reduced-motion */

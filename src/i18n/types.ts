@@ -61,6 +61,15 @@ export interface Dictionary {
     hostCountries: string;
     officialLinks: string;
     zeroFees: string;
+    pillVerifiedSources?: string;
+    pill100Official?: string;
+    pillGlobalCoverage?: string;
+    pill100Countries?: string;
+    pillZeroMiddlemen?: string;
+    pillDirectAccess?: string;
+    handwrittenNote?: string;
+    viewAllScholarships?: string;
+    viewAllCountries?: string;
     featuredTitle: string;
     featuredSubtitle: string;
     exploreDegreesTitle: string;
